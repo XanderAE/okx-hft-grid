@@ -99,12 +99,16 @@ type application struct {
 	emDetector  *risk.ExtremeMarketDetector
 
 	// Market data
-	wsClient   *marketdata.WSClient
-	dispatcher *marketdata.Dispatcher
-	orderBook  *orderbook.LocalOrderBook
+	wsClient    *marketdata.WSClient
+	privateWS   *marketdata.PrivateWSClient
+	dispatcher  *marketdata.Dispatcher
+	orderBook   *orderbook.LocalOrderBook
 
 	// Strategy
 	scheduler  *strategy.Scheduler
+
+	// Execution
+	fillHandler *execution.GridFillHandler
 
 	// Reconciler
 	reconciler *execution.Reconciler
@@ -185,6 +189,10 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 	wsConfig.Symbols = cfg.Symbols
 	app.wsClient = marketdata.NewWSClient(wsConfig)
 
+	// 5.11b PrivateWSClient (for order fills)
+	privateWSConfig := marketdata.DefaultPrivateWSClientConfig()
+	app.privateWS = marketdata.NewPrivateWSClient(privateWSConfig, creds)
+
 	// 5.12 EventDispatcher
 	app.dispatcher = marketdata.NewDispatcher(marketdata.DefaultDispatcherConfig())
 
@@ -252,6 +260,9 @@ func (app *application) startup() error {
 
 	// 6d.1 Place initial grid orders at current market price
 	app.placeInitialGridOrders()
+
+	// 6d.2 Start private WebSocket and register fill handler for grid trading loop
+	app.startPrivateWSAndFillHandler()
 
 	// 6e. Start metrics server
 	if err := app.metrics.Start(); err != nil {
@@ -647,6 +658,54 @@ func (app *application) placeInitialGridOrders() {
 	}
 }
 
+// startPrivateWSAndFillHandler connects the private WebSocket for order fill notifications
+// and registers the grid fill handler to place counter-orders automatically.
+func (app *application) startPrivateWSAndFillHandler() {
+	// Compute grid levels for all configured grids
+	gridLevels := make(map[string][]decimal.Decimal)
+	for i := range app.cfg.GridConfigs {
+		cfg := &app.cfg.GridConfigs[i]
+		if cfg.UpperPrice.IsZero() || cfg.LowerPrice.IsZero() {
+			continue
+		}
+		levels, err := strategy.CalculateGridLevels(cfg)
+		if err != nil {
+			app.logger.LogWarn("failed to compute grid levels for fill handler", map[string]string{
+				"symbol": cfg.Symbol,
+				"error":  err.Error(),
+			})
+			continue
+		}
+		gridLevels[cfg.Symbol] = levels
+	}
+
+	// Create fill handler
+	app.fillHandler = execution.NewGridFillHandler(
+		app.apiClient,
+		app.cfg.GridConfigs,
+		gridLevels,
+		app.logger,
+	)
+
+	// Register fill callback on private WS
+	app.privateWS.SetFillCallback(app.fillHandler.OnFill)
+
+	// Connect private WebSocket
+	if err := app.privateWS.Connect(); err != nil {
+		app.logger.LogError("failed to connect private WebSocket", map[string]string{
+			"error": err.Error(),
+		})
+		app.alerter.SendWarning("Private WebSocket connection failed: "+err.Error(), map[string]string{
+			"impact": "grid fill counter-orders will not be placed automatically",
+		})
+		return
+	}
+
+	app.logger.LogInfo("private WebSocket connected, fill handler active", map[string]string{
+		"grid_symbols": fmt.Sprintf("%d", len(gridLevels)),
+	})
+}
+
 // waitForShutdown blocks until a shutdown signal is received and performs graceful shutdown.
 func (app *application) waitForShutdown() {
 	// 7. Graceful shutdown on SIGINT/SIGTERM
@@ -680,6 +739,11 @@ func (app *application) gracefulShutdown() {
 		// 7d. Close connections
 		app.reconciler.Stop()
 		app.dispatcher.Stop()
+		if app.privateWS != nil {
+			if err := app.privateWS.Disconnect(); err != nil {
+				app.logger.LogWarn("error disconnecting private WebSocket", map[string]string{"error": err.Error()})
+			}
+		}
 		if err := app.wsClient.Disconnect(); err != nil {
 			app.logger.LogWarn("error disconnecting WebSocket", map[string]string{"error": err.Error()})
 		}
