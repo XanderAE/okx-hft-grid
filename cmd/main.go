@@ -523,6 +523,11 @@ func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper 
 	lower = currentPrice.Mul(decimal.NewFromInt(1).Sub(rangePercent))
 	upper = currentPrice.Mul(decimal.NewFromInt(1).Add(rangePercent))
 
+	// Round to appropriate precision for the symbol's tick size
+	precision := getPricePrecision(symbol)
+	lower = lower.Round(int32(precision))
+	upper = upper.Round(int32(precision))
+
 	app.logger.LogInfo("adaptive grid range calculated", map[string]string{
 		"symbol":        symbol,
 		"current_price": currentPrice.String(),
@@ -576,6 +581,26 @@ func (app *application) getAvailableBalance() (decimal.Decimal, error) {
 	return decimal.Zero, fmt.Errorf("USDT not found in balance response")
 }
 
+// cancelAllPendingOrders cancels all pending orders for all grid symbols on startup
+// to free up balance before placing fresh grid orders.
+func (app *application) cancelAllPendingOrders() {
+	for _, gridCfg := range app.cfg.GridConfigs {
+		orders, err := app.getPendingOrders(gridCfg.Symbol)
+		if err != nil {
+			continue
+		}
+		for _, order := range orders {
+			app.apiClient.CancelOrder(gridCfg.Symbol, order.OrdID)
+		}
+		if len(orders) > 0 {
+			app.logger.LogInfo("startup: cancelled existing orders", map[string]string{
+				"symbol": gridCfg.Symbol,
+				"count":  fmt.Sprintf("%d", len(orders)),
+			})
+		}
+	}
+}
+
 // placeInitialGridOrders fetches the current market price for each grid config and places
 // the initial grid of limit orders. This is the critical step that ensures the bot actually
 // has orders on the book after startup. If UpperPrice/LowerPrice are zero (not configured),
@@ -583,6 +608,8 @@ func (app *application) getAvailableBalance() (decimal.Decimal, error) {
 // Before placing orders, it dynamically calculates order_size based on available USDT balance
 // to ensure nearly 100% fund utilization.
 func (app *application) placeInitialGridOrders() {
+	// Cancel all existing orders first to free up balance
+	app.cancelAllPendingOrders()
 	// Dynamic order sizing: query available USDT and distribute across all BUY grid slots
 	availableBalance, err := app.getAvailableBalance()
 	if err != nil {
@@ -730,6 +757,12 @@ func (app *application) placeInitialGridOrders() {
 				"error":  err.Error(),
 			})
 			continue
+		}
+
+		// Round all levels to the instrument's tick precision
+		precision := int32(getPricePrecision(gridCfg.Symbol))
+		for j := range levels {
+			levels[j] = levels[j].Round(precision)
 		}
 
 		// 3. Generate orders at grid levels
@@ -1062,6 +1095,12 @@ func (app *application) rebalanceOrders() {
 				continue
 			}
 
+			// Round all levels to the instrument's tick precision
+			precision := int32(getPricePrecision(symbol))
+			for j := range levels {
+				levels[j] = levels[j].Round(precision)
+			}
+
 			// Place only BUY orders (SELL orders are placed after fills as counter-orders)
 			orders := strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
 
@@ -1189,25 +1228,30 @@ func (app *application) getPendingOrders(symbol string) ([]PendingOrder, error) 
 	return ordersResp.Data, nil
 }
 
+// getPricePrecision returns the number of decimal places allowed for a symbol on OKX.
+func getPricePrecision(symbol string) int {
+	switch {
+	case strings.Contains(symbol, "BTC"):
+		return 1
+	case strings.Contains(symbol, "ETH"):
+		return 2
+	case strings.Contains(symbol, "DOGE"):
+		return 5
+	case strings.Contains(symbol, "PEPE"):
+		return 10
+	case strings.Contains(symbol, "WIF"):
+		return 4
+	case strings.Contains(symbol, "KOR"):
+		return 4
+	default:
+		return 5
+	}
+}
+
 // roundPriceForSymbol rounds a price to the appropriate decimal places for the given symbol.
 // OKX has different tick sizes per instrument.
 func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
-	switch {
-	case strings.Contains(symbol, "BTC"):
-		return price.Round(1) // BTC: $0.1 tick
-	case strings.Contains(symbol, "ETH"):
-		return price.Round(2) // ETH: $0.01 tick
-	case strings.Contains(symbol, "DOGE"):
-		return price.Round(5) // DOGE: $0.00001 tick
-	case strings.Contains(symbol, "PEPE"):
-		return price.Round(10) // PEPE: very small tick
-	case strings.Contains(symbol, "WIF"):
-		return price.Round(4) // WIF: $0.0001 tick
-	case strings.Contains(symbol, "KOR"):
-		return price.Round(4) // KOR: $0.0001 tick
-	default:
-		return price.Round(6) // Safe default
-	}
+	return price.Round(int32(getPricePrecision(symbol)))
 }
 
 // buildAlertChannels constructs alert channels from system configuration.

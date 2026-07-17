@@ -233,7 +233,7 @@ func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
 	case strings.Contains(symbol, "KOR"):
 		return price.Round(4) // KOR: $0.0001 tick
 	default:
-		return price.Round(6) // Safe default
+		return price.Round(5) // Safe default
 	}
 }
 

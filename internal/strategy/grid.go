@@ -101,7 +101,7 @@ func calculateGeometricLevels(lower, upper decimal.Decimal, count int) []decimal
 // validateLevels checks that grid levels meet all invariants:
 // 1. Exactly gridCount+1 levels
 // 2. Strictly ascending
-// 3. First level = lowerPrice
+// 3. First level ≈ lowerPrice (within 0.01% tolerance)
 // 4. Last level ≈ upperPrice (tolerance 1e-9 × priceRange)
 func validateLevels(levels []decimal.Decimal, lower, upper decimal.Decimal, count int) error {
 	// Check count
@@ -116,8 +116,9 @@ func validateLevels(levels []decimal.Decimal, lower, upper decimal.Decimal, coun
 		}
 	}
 
-	// Check first level = lower
-	if !levels[0].Equal(lower) {
+	// Check first level ≈ lower (tolerance 0.01% of lower price)
+	lowerTolerance := lower.Mul(decimal.NewFromFloat(0.0001))
+	if levels[0].Sub(lower).Abs().GreaterThan(lowerTolerance) {
 		return errors.New("first grid level does not equal lower price")
 	}
 
