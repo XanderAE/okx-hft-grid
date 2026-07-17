@@ -1,0 +1,26 @@
+[Unit]
+Description=OKX Altcoin HFT Grid Trading System
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=okxtrader
+Group=okxtrader
+WorkingDirectory=/opt/okx-hft-grid
+ExecStart=/opt/okx-hft-grid/okx-hft-grid -config /etc/okx-hft-grid/config.yaml
+EnvironmentFile=/etc/okx-hft-grid/env
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=okx-hft-grid
+LimitNOFILE=65535
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

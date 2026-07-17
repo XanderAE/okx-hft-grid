@@ -1,0 +1,47 @@
+# OKX HFT Grid Bot - Example Configuration
+# Copy this file to config.yaml and adjust values for your deployment.
+
+strategies:
+  - strategy_id: "doge-usdt-grid-01"
+    type: "grid"
+    grid:
+      symbol: "DOGE-USDT"
+      upper_price: "0.20"
+      lower_price: "0.10"
+      grid_count: 50
+      grid_type: 0  # 0 = ARITHMETIC, 1 = GEOMETRIC
+      order_size: "100"
+      max_position: "10000"
+      fee_rate: "0.001"
+      take_profit_ratio: "0.05"
+      stop_loss_ratio: "0.03"
+      reinvest_profit: false
+
+      # Grid drift configuration — automatic range relocation
+      drift:
+        enabled: true
+        drift_threshold: "0.10"    # Boundary zone as fraction of range [0.01, 0.50]
+        drift_step: 2              # Number of grid intervals to shift per drift
+        cooldown_period: 30s       # Minimum time between consecutive drifts (min 5s)
+        max_drifts: 50             # Max drifts per session (0 = unlimited)
+
+  - strategy_id: "btc-usdt-meanrev-01"
+    type: "mean_reversion"
+    mean_reversion:
+      symbol: "BTC-USDT"
+      order_size: "0.001"
+      ema_period: 20
+      entry_threshold: "2.0"
+      exit_threshold: "0.5"
+      cooldown_bars: 5
+
+# Risk management
+risk:
+  max_daily_loss: "100.0"
+  max_position_value: "5000.0"
+  emergency_stop_loss_pct: "0.05"
+
+# Monitoring
+monitor:
+  metrics_port: 9090
+  alert_webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"

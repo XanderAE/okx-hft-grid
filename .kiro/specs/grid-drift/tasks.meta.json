@@ -1,0 +1,299 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add DriftConfig struct and Drift field to GridConfig in `pkg/models/grid.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219615635
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219639503
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219738143
+      }
+    ],
+    "1.2 Add DriftConfig validation in `internal/config/config.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219615854
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219762898
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219864850
+      }
+    ],
+    "2.1 Create `internal/strategy/grid_drift.go` with the GridDriftEngine struct and constructor": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616001
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219763482
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219865269
+      }
+    ],
+    "2.2 Implement drift trigger detection in `internal/strategy/grid_drift.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616130
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219873818
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219970821
+      }
+    ],
+    "2.3 Implement range computation in `internal/strategy/grid_drift.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616337
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219874313
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219971102
+      }
+    ],
+    "2.4 Implement order cancellation logic in `internal/strategy/grid_drift.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616552
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219978686
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220098905
+      }
+    ],
+    "2.5 Implement order placement logic in `internal/strategy/grid_drift.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616725
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219979203
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220099357
+      }
+    ],
+    "2.6 Implement the full drift execution orchestrator in `internal/strategy/grid_drift.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219616892
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220107471
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220230509
+      }
+    ],
+    "2.7 Implement `OnPriceUpdate(currentPrice)` as the public entry point": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219617064
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220231474
+      }
+    ],
+    "3. Checkpoint": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219617257
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220470387
+      }
+    ],
+    "4.1 Add `DriftEngine *GridDriftEngine` field to `StrategyInstance` in `internal/strategy/scheduler.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219617735
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220241019
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220466431
+      }
+    ],
+    "4.2 Call `DriftEngine.OnPriceUpdate` from `processGridUpdate` in `internal/strategy/scheduler.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219617992
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220242197
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220466695
+      }
+    ],
+    "4.3 Register drift Prometheus metrics in `internal/monitor/metrics.go`": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219618236
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220239706
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220467331
+      }
+    ],
+    "5.1 Create `internal/strategy/grid_drift_test.go` with unit tests for GridDriftEngine": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219618439
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220470771
+      }
+    ],
+    "5.2 Create `internal/config/config_drift_test.go` with unit tests for ValidateDriftConfig": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219618818
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220471766
+      }
+    ],
+    "6.1 Add drift config section to `deploy/env.example` or create a `deploy/config.example.yaml` showing DriftConfig fields with comments": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219619070
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220470119
+      }
+    ],
+    "7. Final checkpoint": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219619338
+      },
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220472768
+      }
+    ],
+    "1. Add DriftConfig model and extend GridConfig": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784219865114
+      }
+    ],
+    "2. Implement GridDriftEngine": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220231641
+      }
+    ],
+    "4. Integrate with Scheduler and add metrics": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220467486
+      }
+    ],
+    "6. Update deploy configuration example": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220470206
+      }
+    ],
+    "5. Write unit tests": [
+      {
+        "executionId": "3d19b534-b419-4c8b-a1ee-bed98e871b4a",
+        "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
+        "timestamp": 1784220471933
+      }
+    ]
+  }
+}
