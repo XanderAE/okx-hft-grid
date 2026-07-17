@@ -534,11 +534,122 @@ func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper 
 	return lower, upper, nil
 }
 
+// getAvailableBalance queries the OKX account balance API and returns the available USDT balance.
+func (app *application) getAvailableBalance() (decimal.Decimal, error) {
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/account/balance", nil)
+	if err != nil {
+		return decimal.Zero, err
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to read balance response: %w", err)
+	}
+
+	var balResp struct {
+		Code string `json:"code"`
+		Data []struct {
+			Details []struct {
+				Ccy      string `json:"ccy"`
+				AvailBal string `json:"availBal"`
+			} `json:"details"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(bodyBytes, &balResp); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to parse balance response: %w", err)
+	}
+
+	if balResp.Code != "0" || len(balResp.Data) == 0 {
+		return decimal.Zero, fmt.Errorf("balance API error: code=%s", balResp.Code)
+	}
+
+	for _, detail := range balResp.Data[0].Details {
+		if detail.Ccy == "USDT" {
+			bal, err := decimal.NewFromString(detail.AvailBal)
+			if err != nil {
+				return decimal.Zero, fmt.Errorf("failed to parse USDT balance: %w", err)
+			}
+			return bal, nil
+		}
+	}
+	return decimal.Zero, fmt.Errorf("USDT not found in balance response")
+}
+
 // placeInitialGridOrders fetches the current market price for each grid config and places
 // the initial grid of limit orders. This is the critical step that ensures the bot actually
 // has orders on the book after startup. If UpperPrice/LowerPrice are zero (not configured),
 // it uses calculateAdaptiveGridRange to determine the grid bounds from historical data.
+// Before placing orders, it dynamically calculates order_size based on available USDT balance
+// to ensure nearly 100% fund utilization.
 func (app *application) placeInitialGridOrders() {
+	// Dynamic order sizing: query available USDT and distribute across all BUY grid slots
+	availableBalance, err := app.getAvailableBalance()
+	if err != nil {
+		app.logger.LogWarn("could not get available balance, using config order_size", map[string]string{"error": err.Error()})
+		// Fall through to use config values
+	} else {
+		// Reserve 5% as buffer for fees and slippage
+		usableBalance := availableBalance.Mul(decimal.NewFromFloat(0.95))
+
+		// Count total BUY grid slots across all symbols
+		totalBuySlots := 0
+		type symbolInfo struct {
+			index    int
+			price    decimal.Decimal
+			buySlots int
+		}
+		var infos []symbolInfo
+
+		for i, gridCfg := range app.cfg.GridConfigs {
+			currentPrice, priceErr := app.getCurrentPrice(gridCfg.Symbol)
+			if priceErr != nil {
+				continue
+			}
+
+			// Calculate adaptive range to know how many BUY levels there will be
+			lower, upper, rangeErr := app.calculateAdaptiveGridRange(gridCfg.Symbol)
+			if rangeErr != nil {
+				continue
+			}
+
+			// Estimate buy slots: levels below current price
+			gridCount := gridCfg.GridCount
+			rangeWidth := upper.Sub(lower)
+			step := rangeWidth.Div(decimal.NewFromInt(int64(gridCount)))
+			buySlots := 0
+			for lvl := 0; lvl <= gridCount; lvl++ {
+				levelPrice := lower.Add(step.Mul(decimal.NewFromInt(int64(lvl))))
+				if levelPrice.LessThan(currentPrice) {
+					buySlots++
+				}
+			}
+
+			infos = append(infos, symbolInfo{index: i, price: currentPrice, buySlots: buySlots})
+			totalBuySlots += buySlots
+		}
+
+		if totalBuySlots > 0 {
+			// Divide usable balance equally among all buy slots
+			perSlotUSDT := usableBalance.Div(decimal.NewFromInt(int64(totalBuySlots)))
+
+			for _, info := range infos {
+				// order_size = perSlotUSDT / currentPrice (number of coins per order)
+				orderSize := perSlotUSDT.Div(info.price).Round(0)
+				if orderSize.IsPositive() {
+					app.cfg.GridConfigs[info.index].OrderSize = orderSize
+					app.logger.LogInfo("dynamic order size calculated", map[string]string{
+						"symbol":       app.cfg.GridConfigs[info.index].Symbol,
+						"order_size":   orderSize.String(),
+						"per_slot_usd": perSlotUSDT.String(),
+						"buy_slots":    fmt.Sprintf("%d", info.buySlots),
+						"balance":      availableBalance.String(),
+					})
+				}
+			}
+		}
+	}
+
 	for i, gridCfg := range app.cfg.GridConfigs {
 		strategyID := fmt.Sprintf("grid_%s_%d", gridCfg.Symbol, i)
 
@@ -953,6 +1064,34 @@ func (app *application) rebalanceOrders() {
 
 			// Place only BUY orders (SELL orders are placed after fills as counter-orders)
 			orders := strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
+
+			// Dynamic order sizing for rebalance
+			availBal, balErr := app.getAvailableBalance()
+			if balErr == nil && availBal.IsPositive() {
+				// Count buy slots in new levels
+				buyCount := 0
+				for _, order := range orders {
+					if order.Side == models.SideBuy {
+						buyCount++
+					}
+				}
+				if buyCount > 0 {
+					perSlot := availBal.Mul(decimal.NewFromFloat(0.95)).Div(decimal.NewFromInt(int64(buyCount)))
+					dynamicSize := perSlot.Div(currentPrice).Round(0)
+					if dynamicSize.IsPositive() {
+						app.cfg.GridConfigs[i].OrderSize = dynamicSize
+						app.logger.LogInfo("rebalancer: dynamic order size calculated", map[string]string{
+							"symbol":     symbol,
+							"order_size": dynamicSize.String(),
+							"balance":    availBal.String(),
+							"buy_slots":  fmt.Sprintf("%d", buyCount),
+						})
+						// Regenerate orders with updated size
+						orders = strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
+					}
+				}
+			}
+
 			placed := 0
 			for _, order := range orders {
 				if order.Side == models.SideBuy {
