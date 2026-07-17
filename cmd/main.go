@@ -437,75 +437,79 @@ func (app *application) startStrategies() {
 	}
 }
 
-// calculateAdaptiveGridRange queries 7-day daily candles from OKX and computes
-// adaptive grid boundaries based on historical price data. It applies a 2% buffer
-// below the lowest low and above the highest high.
+// calculateAdaptiveGridRange fetches the current ticker for a symbol and computes
+// adaptive grid boundaries centered on the current price. It uses 24h volatility
+// to size the range (minimum 3%, maximum 8% each side) ensuring all grid levels
+// are within realistic trading distance of the current price.
 func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper decimal.Decimal, err error) {
-	// Query 7-day daily candles
-	resp, err := app.apiClient.DoRequest("GET", "/api/v5/market/candles?instId="+symbol+"&bar=1D&limit=7", nil)
+	// 1. Get current price
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/market/ticker?instId="+symbol, nil)
 	if err != nil {
-		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to query candles for %s: %w", symbol, err)
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to get ticker for %s: %w", symbol, err)
 	}
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to read candles response for %s: %w", symbol, err)
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to read ticker for %s: %w", symbol, err)
 	}
 
-	var candleResp struct {
-		Code string     `json:"code"`
-		Msg  string     `json:"msg"`
-		Data [][]string `json:"data"` // [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
+	var tickerResp struct {
+		Code string `json:"code"`
+		Msg  string `json:"msg"`
+		Data []struct {
+			Last    string `json:"last"`
+			High24h string `json:"high24h"`
+			Low24h  string `json:"low24h"`
+		} `json:"data"`
 	}
-	if err := json.Unmarshal(bodyBytes, &candleResp); err != nil {
-		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to parse candles response for %s: %w", symbol, err)
+	if err := json.Unmarshal(bodyBytes, &tickerResp); err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to parse ticker for %s: %w", symbol, err)
 	}
 
-	if candleResp.Code != "0" || len(candleResp.Data) == 0 {
-		return decimal.Zero, decimal.Zero, fmt.Errorf("candles API error for %s: code=%s, msg=%s", symbol, candleResp.Code, candleResp.Msg)
+	if tickerResp.Code != "0" || len(tickerResp.Data) == 0 {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("ticker API error for %s: code=%s", symbol, tickerResp.Code)
 	}
 
-	// Find min low and max high from 7-day candles
-	// Candle format: [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
-	minLow := decimal.NewFromFloat(999999999)
-	maxHigh := decimal.Zero
+	currentPrice, err := decimal.NewFromString(tickerResp.Data[0].Last)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to parse price for %s: %w", symbol, err)
+	}
 
-	for _, candle := range candleResp.Data {
-		if len(candle) < 5 {
-			continue
+	// 2. Use 24h high/low to determine volatility, but cap at ±5% from current price
+	high24h, _ := decimal.NewFromString(tickerResp.Data[0].High24h)
+	low24h, _ := decimal.NewFromString(tickerResp.Data[0].Low24h)
+
+	// Calculate range based on 24h volatility or default 5%
+	var rangePercent decimal.Decimal
+	if high24h.IsPositive() && low24h.IsPositive() && currentPrice.IsPositive() {
+		// Actual 24h range as percentage of current price
+		volatility := high24h.Sub(low24h).Div(currentPrice)
+		// Use half the 24h volatility as our range (each side), minimum 3%, maximum 8%
+		halfVol := volatility.Div(decimal.NewFromInt(2))
+		minRange := decimal.NewFromFloat(0.03)
+		maxRange := decimal.NewFromFloat(0.08)
+		if halfVol.LessThan(minRange) {
+			rangePercent = minRange
+		} else if halfVol.GreaterThan(maxRange) {
+			rangePercent = maxRange
+		} else {
+			rangePercent = halfVol
 		}
-		high, err := decimal.NewFromString(candle[2])
-		if err != nil {
-			continue
-		}
-		low, err := decimal.NewFromString(candle[3])
-		if err != nil {
-			continue
-		}
-		if low.LessThan(minLow) {
-			minLow = low
-		}
-		if high.GreaterThan(maxHigh) {
-			maxHigh = high
-		}
+	} else {
+		rangePercent = decimal.NewFromFloat(0.05) // Default 5%
 	}
 
-	if minLow.Equal(decimal.NewFromFloat(999999999)) || maxHigh.IsZero() {
-		return decimal.Zero, decimal.Zero, fmt.Errorf("no valid candle data found for %s", symbol)
-	}
-
-	// Add 2% buffer: lower = minLow * 0.98, upper = maxHigh * 1.02
-	buffer := decimal.NewFromFloat(0.02)
-	lower = minLow.Mul(decimal.NewFromInt(1).Sub(buffer))
-	upper = maxHigh.Mul(decimal.NewFromInt(1).Add(buffer))
+	// 3. Compute range: currentPrice ± rangePercent
+	lower = currentPrice.Mul(decimal.NewFromInt(1).Sub(rangePercent))
+	upper = currentPrice.Mul(decimal.NewFromInt(1).Add(rangePercent))
 
 	app.logger.LogInfo("adaptive grid range calculated", map[string]string{
-		"symbol":   symbol,
-		"min_low":  minLow.String(),
-		"max_high": maxHigh.String(),
-		"lower":    lower.String(),
-		"upper":    upper.String(),
+		"symbol":        symbol,
+		"current_price": currentPrice.String(),
+		"range_percent": rangePercent.Mul(decimal.NewFromInt(100)).String() + "%",
+		"lower":         lower.String(),
+		"upper":         upper.String(),
 	})
 
 	return lower, upper, nil
