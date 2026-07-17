@@ -426,12 +426,101 @@ func (app *application) startStrategies() {
 	}
 }
 
+// calculateAdaptiveGridRange queries 7-day daily candles from OKX and computes
+// adaptive grid boundaries based on historical price data. It applies a 2% buffer
+// below the lowest low and above the highest high.
+func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper decimal.Decimal, err error) {
+	// Query 7-day daily candles
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/market/candles?instId="+symbol+"&bar=1D&limit=7", nil)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to query candles for %s: %w", symbol, err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to read candles response for %s: %w", symbol, err)
+	}
+
+	var candleResp struct {
+		Code string     `json:"code"`
+		Msg  string     `json:"msg"`
+		Data [][]string `json:"data"` // [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
+	}
+	if err := json.Unmarshal(bodyBytes, &candleResp); err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("failed to parse candles response for %s: %w", symbol, err)
+	}
+
+	if candleResp.Code != "0" || len(candleResp.Data) == 0 {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("candles API error for %s: code=%s, msg=%s", symbol, candleResp.Code, candleResp.Msg)
+	}
+
+	// Find min low and max high from 7-day candles
+	// Candle format: [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
+	minLow := decimal.NewFromFloat(999999999)
+	maxHigh := decimal.Zero
+
+	for _, candle := range candleResp.Data {
+		if len(candle) < 5 {
+			continue
+		}
+		high, err := decimal.NewFromString(candle[2])
+		if err != nil {
+			continue
+		}
+		low, err := decimal.NewFromString(candle[3])
+		if err != nil {
+			continue
+		}
+		if low.LessThan(minLow) {
+			minLow = low
+		}
+		if high.GreaterThan(maxHigh) {
+			maxHigh = high
+		}
+	}
+
+	if minLow.Equal(decimal.NewFromFloat(999999999)) || maxHigh.IsZero() {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("no valid candle data found for %s", symbol)
+	}
+
+	// Add 2% buffer: lower = minLow * 0.98, upper = maxHigh * 1.02
+	buffer := decimal.NewFromFloat(0.02)
+	lower = minLow.Mul(decimal.NewFromInt(1).Sub(buffer))
+	upper = maxHigh.Mul(decimal.NewFromInt(1).Add(buffer))
+
+	app.logger.LogInfo("adaptive grid range calculated", map[string]string{
+		"symbol":   symbol,
+		"min_low":  minLow.String(),
+		"max_high": maxHigh.String(),
+		"lower":    lower.String(),
+		"upper":    upper.String(),
+	})
+
+	return lower, upper, nil
+}
+
 // placeInitialGridOrders fetches the current market price for each grid config and places
 // the initial grid of limit orders. This is the critical step that ensures the bot actually
-// has orders on the book after startup.
+// has orders on the book after startup. If UpperPrice/LowerPrice are zero (not configured),
+// it uses calculateAdaptiveGridRange to determine the grid bounds from historical data.
 func (app *application) placeInitialGridOrders() {
 	for i, gridCfg := range app.cfg.GridConfigs {
 		strategyID := fmt.Sprintf("grid_%s_%d", gridCfg.Symbol, i)
+
+		// 0. Calculate adaptive grid range if upper/lower prices are not set
+		if app.cfg.GridConfigs[i].UpperPrice.IsZero() || app.cfg.GridConfigs[i].LowerPrice.IsZero() {
+			adaptiveLower, adaptiveUpper, err := app.calculateAdaptiveGridRange(gridCfg.Symbol)
+			if err != nil {
+				app.logger.LogError("failed to calculate adaptive grid range", map[string]string{
+					"symbol": gridCfg.Symbol,
+					"error":  err.Error(),
+				})
+				continue
+			}
+			app.cfg.GridConfigs[i].LowerPrice = adaptiveLower
+			app.cfg.GridConfigs[i].UpperPrice = adaptiveUpper
+		}
 
 		// 1. Get current price from OKX REST API
 		resp, err := app.apiClient.DoRequest("GET", "/api/v5/market/ticker?instId="+gridCfg.Symbol, nil)
@@ -488,7 +577,7 @@ func (app *application) placeInitialGridOrders() {
 			continue
 		}
 
-		// 2. Calculate grid levels
+		// 2. Calculate grid levels using the (possibly adaptive) bounds
 		levels, err := strategy.CalculateGridLevels(&app.cfg.GridConfigs[i])
 		if err != nil {
 			app.logger.LogError("failed to calculate grid levels", map[string]string{
@@ -552,6 +641,8 @@ func (app *application) placeInitialGridOrders() {
 			"total_orders":  fmt.Sprintf("%d", len(orders)),
 			"placed":        fmt.Sprintf("%d", placed),
 			"failed":        fmt.Sprintf("%d", failed),
+			"lower_price":   app.cfg.GridConfigs[i].LowerPrice.String(),
+			"upper_price":   app.cfg.GridConfigs[i].UpperPrice.String(),
 		})
 	}
 }
