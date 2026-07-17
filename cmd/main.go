@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -278,6 +279,9 @@ func (app *application) startup() error {
 
 	// 6d.2 Start private WebSocket and register fill handler for grid trading loop
 	app.startPrivateWSAndFillHandler()
+
+	// 6d.3 Start order rebalancer to cancel stranded orders and place new ones
+	app.startOrderRebalancer()
 
 	// 6e. Start metrics server
 	if err := app.metrics.Start(); err != nil {
@@ -824,6 +828,246 @@ func panicRecovery(alerter *monitor.Alerter) {
 		}
 
 		os.Exit(1)
+	}
+}
+
+// PendingOrder represents a pending order returned from OKX REST API.
+type PendingOrder struct {
+	InstID string `json:"instId"`
+	OrdID  string `json:"ordId"`
+	Px     string `json:"px"`
+	Sz     string `json:"sz"`
+	Side   string `json:"side"`
+	State  string `json:"state"`
+}
+
+// startOrderRebalancer launches a background goroutine that periodically checks
+// all pending orders and cancels those that have drifted too far from current price,
+// then places new orders closer to the current price using grid level logic.
+func (app *application) startOrderRebalancer() {
+	go func() {
+		defer panicRecovery(app.alerter)
+
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				app.rebalanceOrders()
+			}
+		}
+	}()
+	app.logger.LogInfo("order rebalancer started", map[string]string{
+		"interval": "30s",
+		"threshold": "2%",
+	})
+}
+
+// rebalanceOrders iterates all grid symbols, checks pending orders, cancels those
+// too far from current price (>2%), and places new orders at current grid levels.
+func (app *application) rebalanceOrders() {
+	for i, gridCfg := range app.cfg.GridConfigs {
+		symbol := gridCfg.Symbol
+
+		// 1. Get current price
+		currentPrice, err := app.getCurrentPrice(symbol)
+		if err != nil {
+			app.logger.LogWarn("rebalancer: failed to get current price", map[string]string{
+				"symbol": symbol,
+				"error":  err.Error(),
+			})
+			continue
+		}
+
+		// 2. Get pending orders from OKX
+		pendingOrders, err := app.getPendingOrders(symbol)
+		if err != nil {
+			app.logger.LogWarn("rebalancer: failed to get pending orders", map[string]string{
+				"symbol": symbol,
+				"error":  err.Error(),
+			})
+			continue
+		}
+
+		if len(pendingOrders) == 0 {
+			continue
+		}
+
+		// 3. Check each order - cancel if too far from current price (>2%)
+		maxDistance := currentPrice.Mul(decimal.NewFromFloat(0.02))
+		cancelledAny := false
+
+		for _, order := range pendingOrders {
+			orderPrice, err := decimal.NewFromString(order.Px)
+			if err != nil {
+				continue
+			}
+			distance := currentPrice.Sub(orderPrice).Abs()
+
+			if distance.GreaterThan(maxDistance) {
+				// Cancel this order - it's too far away
+				_, cancelErr := app.apiClient.CancelOrder(symbol, order.OrdID)
+				if cancelErr != nil {
+					app.logger.LogWarn("rebalancer: failed to cancel stranded order", map[string]string{
+						"symbol": symbol,
+						"ordId":  order.OrdID,
+						"price":  order.Px,
+						"error":  cancelErr.Error(),
+					})
+					continue
+				}
+				cancelledAny = true
+				app.logger.LogInfo("rebalancer: cancelled stranded order", map[string]string{
+					"symbol":        symbol,
+					"ordId":         order.OrdID,
+					"order_price":   order.Px,
+					"current_price": currentPrice.String(),
+					"distance":      distance.String(),
+				})
+			}
+		}
+
+		// 4. If we cancelled orders, place new ones at current grid levels
+		if cancelledAny {
+			// Recalculate adaptive grid range centered on current price
+			adaptiveLower, adaptiveUpper, err := app.calculateAdaptiveGridRange(symbol)
+			if err != nil {
+				app.logger.LogWarn("rebalancer: failed to calculate adaptive range", map[string]string{
+					"symbol": symbol,
+					"error":  err.Error(),
+				})
+				continue
+			}
+			app.cfg.GridConfigs[i].LowerPrice = adaptiveLower
+			app.cfg.GridConfigs[i].UpperPrice = adaptiveUpper
+
+			levels, err := strategy.CalculateGridLevels(&app.cfg.GridConfigs[i])
+			if err != nil {
+				app.logger.LogWarn("rebalancer: failed to calculate grid levels", map[string]string{
+					"symbol": symbol,
+					"error":  err.Error(),
+				})
+				continue
+			}
+
+			// Place only BUY orders (SELL orders are placed after fills as counter-orders)
+			orders := strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
+			placed := 0
+			for _, order := range orders {
+				if order.Side == models.SideBuy {
+					req := &execution.OrderRequest{
+						Symbol:    order.Symbol,
+						Side:      order.Side,
+						OrderType: order.OrderType,
+						Price:     roundPriceForSymbol(order.Price, symbol),
+						Quantity:  order.Quantity,
+					}
+					result, placeErr := app.apiClient.PlaceOrder(req)
+					if placeErr != nil || !result.Success {
+						continue
+					}
+					placed++
+				}
+			}
+
+			// Update fill handler grid levels so counter-orders use new levels
+			if app.fillHandler != nil {
+				app.fillHandler.UpdateGridLevels(symbol, levels)
+			}
+
+			app.logger.LogInfo("rebalancer: orders rebalanced", map[string]string{
+				"symbol":        symbol,
+				"current_price": currentPrice.String(),
+				"new_lower":     adaptiveLower.String(),
+				"new_upper":     adaptiveUpper.String(),
+				"orders_placed": fmt.Sprintf("%d", placed),
+			})
+		}
+	}
+}
+
+// getCurrentPrice queries the OKX REST API for the current ticker price of a symbol.
+func (app *application) getCurrentPrice(symbol string) (decimal.Decimal, error) {
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/market/ticker?instId="+symbol, nil)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get ticker for %s: %w", symbol, err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to read ticker response: %w", err)
+	}
+
+	var tickerResp struct {
+		Code string `json:"code"`
+		Data []struct {
+			Last string `json:"last"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(bodyBytes, &tickerResp); err != nil {
+		return decimal.Zero, fmt.Errorf("failed to parse ticker response: %w", err)
+	}
+
+	if tickerResp.Code != "0" || len(tickerResp.Data) == 0 {
+		return decimal.Zero, fmt.Errorf("ticker API error for %s: code=%s", symbol, tickerResp.Code)
+	}
+
+	price, err := decimal.NewFromString(tickerResp.Data[0].Last)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to parse price: %w", err)
+	}
+
+	return price, nil
+}
+
+// getPendingOrders queries the OKX REST API for all pending orders for a symbol.
+func (app *application) getPendingOrders(symbol string) ([]PendingOrder, error) {
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/trade/orders-pending?instId="+symbol, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pending orders for %s: %w", symbol, err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read pending orders response: %w", err)
+	}
+
+	var ordersResp struct {
+		Code string         `json:"code"`
+		Data []PendingOrder `json:"data"`
+	}
+	if err := json.Unmarshal(bodyBytes, &ordersResp); err != nil {
+		return nil, fmt.Errorf("failed to parse pending orders response: %w", err)
+	}
+
+	if ordersResp.Code != "0" {
+		return nil, fmt.Errorf("pending orders API error for %s: code=%s", symbol, ordersResp.Code)
+	}
+
+	return ordersResp.Data, nil
+}
+
+// roundPriceForSymbol rounds a price to the appropriate decimal places for the given symbol.
+// OKX has different tick sizes per instrument.
+func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
+	switch {
+	case strings.Contains(symbol, "BTC"):
+		return price.Round(1) // BTC: $0.1 tick
+	case strings.Contains(symbol, "ETH"):
+		return price.Round(2) // ETH: $0.01 tick
+	case strings.Contains(symbol, "DOGE"):
+		return price.Round(5) // DOGE: $0.00001 tick
+	case strings.Contains(symbol, "PEPE"):
+		return price.Round(10) // PEPE: very small tick
+	case strings.Contains(symbol, "WIF"):
+		return price.Round(4) // WIF: $0.0001 tick
+	case strings.Contains(symbol, "KOR"):
+		return price.Round(4) // KOR: $0.0001 tick
+	default:
+		return price.Round(6) // Safe default
 	}
 }
 

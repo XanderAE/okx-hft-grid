@@ -236,3 +236,10 @@ func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
 		return price.Round(6) // Safe default
 	}
 }
+
+// UpdateGridLevels updates the grid levels for a given symbol in the fill handler.
+// This allows the rebalancer to keep fill handler levels in sync with the new grid range.
+func (h *GridFillHandler) UpdateGridLevels(symbol string, levels []decimal.Decimal) {
+	h.gridLevels[symbol] = levels
+}
+
