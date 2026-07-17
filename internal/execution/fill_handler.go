@@ -3,6 +3,7 @@ package execution
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/shopspring/decimal"
 	"github.com/yourname/okx-hft-grid/internal/monitor"
@@ -124,6 +125,9 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 		return
 	}
 
+	// Round counter price to appropriate precision for the instrument
+	counterPrice = roundPriceForSymbol(counterPrice, instId)
+
 	// Find the grid config for this instrument to get order size
 	orderSize := size // Default to fill size
 	for _, cfg := range h.gridConfigs {
@@ -210,4 +214,25 @@ func (h *GridFillHandler) findNearestLevel(levels []decimal.Decimal, price decim
 		return idx - 1
 	}
 	return idx
+}
+
+// roundPriceForSymbol rounds a price to the appropriate decimal places for the given symbol.
+// OKX has different tick sizes per instrument.
+func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
+	switch {
+	case strings.Contains(symbol, "BTC"):
+		return price.Round(1) // BTC: $0.1 tick
+	case strings.Contains(symbol, "ETH"):
+		return price.Round(2) // ETH: $0.01 tick
+	case strings.Contains(symbol, "DOGE"):
+		return price.Round(5) // DOGE: $0.00001 tick
+	case strings.Contains(symbol, "PEPE"):
+		return price.Round(10) // PEPE: very small tick
+	case strings.Contains(symbol, "WIF"):
+		return price.Round(4) // WIF: $0.0001 tick
+	case strings.Contains(symbol, "KOR"):
+		return price.Round(4) // KOR: $0.0001 tick
+	default:
+		return price.Round(6) // Safe default
+	}
 }
