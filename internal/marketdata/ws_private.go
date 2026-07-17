@@ -438,6 +438,14 @@ func (pw *PrivateWSClient) readLoop() {
 			continue
 		}
 
+		// Handle OKX "pong" text response to our "ping" text message
+		if string(message) == "pong" {
+			pw.lastPongMu.Lock()
+			pw.lastPong = time.Now()
+			pw.lastPongMu.Unlock()
+			continue
+		}
+
 		// Parse and handle order pushes
 		pw.handleMessage(message)
 	}

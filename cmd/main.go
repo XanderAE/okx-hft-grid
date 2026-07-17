@@ -101,6 +101,7 @@ type application struct {
 	// Market data
 	wsClient    *marketdata.WSClient
 	privateWS   *marketdata.PrivateWSClient
+	parser      *marketdata.Parser
 	dispatcher  *marketdata.Dispatcher
 	orderBook   *orderbook.LocalOrderBook
 
@@ -193,6 +194,11 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 	privateWSConfig := marketdata.DefaultPrivateWSClientConfig()
 	app.privateWS = marketdata.NewPrivateWSClient(privateWSConfig, creds)
 
+	// 5.11c Parser (for tick validation and routing to scheduler)
+	app.parser = marketdata.NewParser(func(symbol, reason string) {
+		app.logger.LogWarn("data validation failed", map[string]string{"symbol": symbol, "reason": reason})
+	})
+
 	// 5.12 EventDispatcher
 	app.dispatcher = marketdata.NewDispatcher(marketdata.DefaultDispatcherConfig())
 
@@ -242,6 +248,15 @@ func (app *application) startup() error {
 		return fmt.Errorf("exchange connection: %w", err)
 	}
 	app.logger.LogInfo("exchange WebSocket connected", nil)
+
+	// Route market data ticks to the Scheduler for mean reversion processing
+	app.wsClient.SetMessageHandler(func(messageType int, data []byte) {
+		tick, err := app.parser.ParseAndValidate(data)
+		if err != nil || tick == nil {
+			return
+		}
+		app.scheduler.OnMarketUpdate(tick.Symbol, tick)
+	})
 
 	// 6c. Reconcile with exchange (60s timeout)
 	if err := app.reconcileWithTimeout(); err != nil {
