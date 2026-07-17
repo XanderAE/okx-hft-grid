@@ -590,7 +590,17 @@ func (app *application) cancelAllPendingOrders() {
 			continue
 		}
 		for _, order := range orders {
-			app.apiClient.CancelOrder(gridCfg.Symbol, order.OrdID)
+			if order.OrdID == "" {
+				continue
+			}
+			_, err := app.apiClient.CancelOrder(gridCfg.Symbol, order.OrdID)
+			if err != nil {
+				app.logger.LogWarn("error cancelling order", map[string]string{
+					"symbol": gridCfg.Symbol,
+					"ordId":  order.OrdID,
+					"error":  err.Error(),
+				})
+			}
 		}
 		if len(orders) > 0 {
 			app.logger.LogInfo("startup: cancelled existing orders", map[string]string{
@@ -842,6 +852,11 @@ func (app *application) startPrivateWSAndFillHandler() {
 				"error":  err.Error(),
 			})
 			continue
+		}
+		// Round all levels to the instrument's tick precision
+		precision := int32(getPricePrecision(cfg.Symbol))
+		for j := range levels {
+			levels[j] = levels[j].Round(precision)
 		}
 		gridLevels[cfg.Symbol] = levels
 	}
