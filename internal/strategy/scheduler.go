@@ -69,6 +69,7 @@ type StrategyInstance struct {
 	LastUpdate  time.Time
 	Symbol      string
 	DriftEngine *GridDriftEngine
+	SignalGen   *SignalGenerator
 }
 
 // Scheduler implements the StrategyEngine interface and manages strategy lifecycle.
@@ -136,6 +137,18 @@ func (s *Scheduler) LoadStrategy(config StrategyConfig) error {
 			nil, // metrics injected separately
 			nil, // alerter injected separately
 		)
+	}
+
+	// Initialize SignalGenerator for mean reversion strategies
+	if config.Type == "mean_reversion" && config.MeanReversion != nil {
+		cfg := config.MeanReversion
+		instance.SignalGen = NewSignalGenerator(SignalGeneratorConfig{
+			EntryThreshold: cfg.EntryThreshold,
+			ExitThreshold:  cfg.ExitThreshold,
+			CooldownMs:     cfg.CooldownMs,
+			LookbackPeriod: cfg.LookbackPeriod,
+			MAType:         cfg.MAType,
+		})
 	}
 
 	s.strategies[config.StrategyID] = instance
@@ -253,9 +266,24 @@ func (s *Scheduler) processMeanReversionUpdate(instance *StrategyInstance, tick 
 		return models.SignalDirectionNone
 	}
 
-	// For mean reversion, we compare price against entry/exit thresholds
-	// This is a simplified routing - the full SignalGenerator handles the complex logic
-	return models.SignalDirectionNone
+	// Initialize signal generator if not yet created
+	if instance.SignalGen == nil {
+		cfg := instance.Config.MeanReversion
+		instance.SignalGen = NewSignalGenerator(SignalGeneratorConfig{
+			EntryThreshold: cfg.EntryThreshold,
+			ExitThreshold:  cfg.ExitThreshold,
+			CooldownMs:     cfg.CooldownMs,
+			LookbackPeriod: cfg.LookbackPeriod,
+			MAType:         cfg.MAType,
+		})
+	}
+
+	// Feed data point
+	instance.SignalGen.AddDataPoint(tick.LastPrice, tick.Volume24h)
+
+	// Generate signal
+	signal := instance.SignalGen.GenerateSignal(tick.LastPrice, time.Now())
+	return signal
 }
 
 // submitSignalForApproval submits a strategy signal to the risk manager for approval.
