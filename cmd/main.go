@@ -674,9 +674,11 @@ func (a *botOrderStoreAdapter) IsBotOwned(_ context.Context, _ string, clientOrd
 	return isBotOwnedClientOrderID(clientOrderID), nil
 }
 
-// inventoryRebalanceLoop periodically checks positions for time decay and hard stop-loss.
+// inventoryRebalanceLoop implements the SELL decay loop for the market-making strategy.
+// Every 5 seconds, it checks open positions and adjusts the SELL price downward by 1 tick.
+// After 2 minutes of decay (24 iterations), it force-exits with a market sell.
 func (app *application) inventoryRebalanceLoop() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(5 * time.Second) // 5-second decay interval
 	defer ticker.Stop()
 	for range ticker.C {
 		for _, cfg := range app.cfg.GridConfigs {
@@ -700,7 +702,6 @@ func (app *application) inventoryRebalanceLoop() {
 					"buy_price": pos.BuyPrice.String(),
 					"current":   currentPrice.String(),
 				})
-				// Place market sell
 				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
 				req := &execution.OrderRequest{
 					Symbol:    cfg.Symbol,
@@ -710,22 +711,17 @@ func (app *application) inventoryRebalanceLoop() {
 				}
 				app.apiClient.PlaceOrder(req)
 				app.inventoryTracker.ClearPosition(cfg.Symbol)
-				continue
-			}
-
-			// Time decay: recalculate SELL price
-			newSellPrice, hasPos := app.inventoryTracker.CalculateSellPrice(cfg.Symbol)
-			if !hasPos {
 				continue
 			}
 
 			elapsed := time.Since(pos.BuyTime)
-			if elapsed > 30*time.Minute && newSellPrice.IsZero() {
-				// Force market sell after 30 min
-				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
-				app.logger.LogWarn("TIME DECAY: force selling at market after 30min", map[string]string{
+
+			// Force market sell after 2 minutes
+			if elapsed > 2*time.Minute {
+				app.logger.LogWarn("DECAY: force market sell after 2min", map[string]string{
 					"symbol": cfg.Symbol,
 				})
+				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
 				req := &execution.OrderRequest{
 					Symbol:    cfg.Symbol,
 					Side:      models.SideSell,
@@ -734,10 +730,67 @@ func (app *application) inventoryRebalanceLoop() {
 				}
 				app.apiClient.PlaceOrder(req)
 				app.inventoryTracker.ClearPosition(cfg.Symbol)
+				continue
 			}
-			// Note: For the time decay price updates (cancel old SELL, place new SELL),
-			// that would be handled by the existing rebalancer which already cancels
-			// orders that are >2% away. The fill handler already uses the tracker for pricing.
+
+			// Every 5 seconds: cancel existing SELL and re-place 1 tick lower
+			// SELL price = buyPrice + 2 ticks - (elapsed/5s) ticks
+			tickSize := getTickSize(cfg.Symbol)
+			ticksDecayed := int64(elapsed.Seconds() / 5)
+			newSellPrice := pos.BuyPrice.Add(tickSize.Mul(decimal.NewFromInt(2))).Sub(tickSize.Mul(decimal.NewFromInt(ticksDecayed)))
+
+			// Don't go below break-even minus fee (-0.2% hard floor)
+			minSellPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(0.998))
+			if newSellPrice.LessThan(minSellPrice) {
+				newSellPrice = minSellPrice
+			}
+
+			precision := getPricePrecision(cfg.Symbol)
+			newSellPrice = newSellPrice.Round(int32(precision))
+
+			// Cancel any existing pending SELL for this symbol, then place new one
+			if app.gateway != nil {
+				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+				pending, _ := app.gateway.ListPendingOrders(ctx2, cfg.Symbol)
+				cancel2()
+				for _, order := range pending {
+					if isBotOwnedClientOrderID(order.ClientOrderID) {
+						ctx3, cancel3 := context.WithTimeout(context.Background(), 5*time.Second)
+						app.gateway.CancelOrder(ctx3, execution.OrderRef{
+							Symbol:          cfg.Symbol,
+							ExchangeOrderID: order.ExchangeOrderID,
+							ClientOrderID:   order.ClientOrderID,
+						})
+						cancel3()
+					}
+				}
+			}
+
+			qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+
+			app.logger.LogInfo("DECAY: adjusting SELL price", map[string]string{
+				"symbol":     cfg.Symbol,
+				"new_price":  newSellPrice.String(),
+				"buy_price":  pos.BuyPrice.String(),
+				"elapsed_s":  fmt.Sprintf("%.0f", elapsed.Seconds()),
+				"ticks_down": fmt.Sprintf("%d", ticksDecayed),
+			})
+
+			// Place new SELL at decayed price
+			req := &execution.OrderRequest{
+				Symbol:    cfg.Symbol,
+				Side:      models.SideSell,
+				OrderType: models.OrderTypePostOnly,
+				Price:     newSellPrice,
+				Quantity:  qty,
+			}
+			_, err = app.apiClient.PlaceOrder(req)
+			if err != nil {
+				app.logger.LogWarn("DECAY: failed to place adjusted SELL", map[string]string{
+					"symbol": cfg.Symbol,
+					"error":  err.Error(),
+				})
+			}
 		}
 	}
 }
@@ -1126,9 +1179,11 @@ func (app *application) placeInitialGridOrders() {
 				}
 			}
 
-			buyPrice := bestBid
+			// Market-making: BUY at bestBid - 1 tick (passive, only fills on dip)
+			tickSize := getTickSize(gridCfg.Symbol)
+			buyPrice := bestBid.Sub(tickSize)
 			if !buyPrice.IsPositive() {
-				// Fallback: 0.1% below current price (~best bid approximation)
+				// Fallback: 0.1% below current price
 				buyPrice = currentPrice.Mul(decimal.NewFromFloat(0.999))
 			}
 			precision := getPricePrecision(gridCfg.Symbol)
@@ -1141,10 +1196,11 @@ func (app *application) placeInitialGridOrders() {
 				Quantity:  gridCfg.OrderSize,
 				Status:    models.OrderStatusPending,
 			}}
-			app.logger.LogInfo("single-grid mode: placing BUY at best bid", map[string]string{
+			app.logger.LogInfo("single-grid mode: placing BUY at bestBid - 1 tick", map[string]string{
 				"symbol":    gridCfg.Symbol,
 				"buy_price": buyPrice.String(),
 				"best_bid":  bestBid.String(),
+				"tick_size": tickSize.String(),
 				"last":      currentPrice.String(),
 			})
 		} else {
@@ -1592,6 +1648,23 @@ func containsStr(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// getTickSize returns the minimum price increment (tick) for a given symbol.
+// Used for market-making: BUY at bestBid - 1 tick, SELL decay by 1 tick per interval.
+func getTickSize(symbol string) decimal.Decimal {
+	switch {
+	case containsStr(symbol, "DOGE"):
+		return decimal.NewFromFloat(0.00001) // 5 decimal places
+	case containsStr(symbol, "WIF"):
+		return decimal.NewFromFloat(0.0001) // 4 decimal places
+	case containsStr(symbol, "BTC"):
+		return decimal.NewFromFloat(0.1)
+	case containsStr(symbol, "ETH"):
+		return decimal.NewFromFloat(0.01)
+	default:
+		return decimal.NewFromFloat(0.00001)
+	}
 }
 
 // getCurrentPriceLegacy uses raw APIClient for backward compat with property tests.

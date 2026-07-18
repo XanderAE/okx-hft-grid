@@ -84,20 +84,14 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 
 	switch side {
 	case "buy":
-		// BUY filled → place SELL at fillPrice + 0.2% (fast cycle, small profit)
+		// BUY filled → place SELL at fillPrice + 2 ticks (approximates bestAsk)
+		// The decay loop will handle adjustments every 5 seconds
 		counterSide = models.SideSell
 		if h.inventoryTracker != nil {
 			h.inventoryTracker.RecordBuy(instId, price, size, ordId)
-			sellPrice, _ := h.inventoryTracker.CalculateSellPrice(instId)
-			if sellPrice.IsZero() {
-				// Would be market sell, but for now just use +0.1%
-				counterPrice = price.Mul(decimal.NewFromFloat(1.001))
-			} else {
-				counterPrice = sellPrice
-			}
-		} else {
-			counterPrice = price.Mul(decimal.NewFromFloat(1.002))
 		}
+		tickSize := getTickSizeForFillHandler(instId)
+		counterPrice = price.Add(tickSize.Mul(decimal.NewFromInt(2)))
 	case "sell":
 		// SELL filled → place BUY at fillPrice - 0.2% (fast cycle, small profit)
 		counterSide = models.SideBuy
@@ -236,4 +230,21 @@ func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
 // This allows the rebalancer to keep fill handler levels in sync with the new grid range.
 func (h *GridFillHandler) UpdateGridLevels(symbol string, levels []decimal.Decimal) {
 	h.gridLevels[symbol] = levels
+}
+
+// getTickSizeForFillHandler returns the minimum price increment (tick) for a given symbol.
+// Used by the fill handler to calculate SELL price at fillPrice + 2 ticks.
+func getTickSizeForFillHandler(symbol string) decimal.Decimal {
+	switch {
+	case strings.Contains(symbol, "DOGE"):
+		return decimal.NewFromFloat(0.00001) // 5 decimal places
+	case strings.Contains(symbol, "WIF"):
+		return decimal.NewFromFloat(0.0001) // 4 decimal places
+	case strings.Contains(symbol, "BTC"):
+		return decimal.NewFromFloat(0.1)
+	case strings.Contains(symbol, "ETH"):
+		return decimal.NewFromFloat(0.01)
+	default:
+		return decimal.NewFromFloat(0.00001)
+	}
 }
