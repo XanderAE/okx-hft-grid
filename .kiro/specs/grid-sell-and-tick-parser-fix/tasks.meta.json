@@ -1,0 +1,149 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "Bug 1 — SELL Quantity Counterexample:\n  fillSz=1, feeRate=0.0001, cfg.OrderSize=1\n  Counter SELL quantity = 1 (cfg.OrderSize), expected = 0.9999 (fillSz * (1 - feeRate))\n  Handler uses cfg.OrderSize instead of fee-adjusted amount.\n\nBug 2 — Tick Parser Counterexample:\n  numTicks=2, bidCents=100, seqId=0 for all ticks\n  Tick #1 passes (no previous stored).\n  Tick #2 rejected: \"validation failed for WIF-USDT: sequence out of order: current=0, previous=0\"\n  Rule 6 evaluates 0 <= 0 as true, rejecting the tick.",
+      "lastRunTimestamp": 1784387178180
+    },
+    "2. Write preservation property tests (BEFORE implementing fix)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784387478166
+    },
+    "3.3 Verify bug condition exploration test now passes": {
+      "status": "passed",
+      "lastRunTimestamp": 1784388007274
+    },
+    "3.4 Verify preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1784388104569
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386725905
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386748044
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387199179
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386726046
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387208029
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387502881
+      }
+    ],
+    "3.1 Implement fee-adjusted SELL quantity in fill_handler.go": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386726266
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387512869
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387788673
+      }
+    ],
+    "3.2 Implement seqId==0 bypass in parser.go validate()": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386726471
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387804013
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387930916
+      }
+    ],
+    "3.3 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386726692
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784387940873
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388024427
+      }
+    ],
+    "3.4 Verify preservation tests still pass": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386727104
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388034987
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388125779
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784386727394
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388137292
+      },
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388690915
+      }
+    ],
+    "3. Fix for SELL quantity fee deduction and tick parser seqId bypass": [
+      {
+        "executionId": "47e5ad70-2c83-43c8-ba88-3f0f92f13357",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784388126210
+      }
+    ]
+  }
+}

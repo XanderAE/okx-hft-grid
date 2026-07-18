@@ -1,0 +1,16 @@
+# 2026/07/18 23:05:41.579671 [TestBugCondition_SellQuantity_FeeAdjusted] [rapid] draw feeRateBps: 1
+# 2026/07/18 23:05:41.579671 [TestBugCondition_SellQuantity_FeeAdjusted] [rapid] draw fillSzCents: 100
+# 2026/07/18 23:05:41.579671 [TestBugCondition_SellQuantity_FeeAdjusted] [rapid] draw orderSizeCents: 100
+# 2026/07/18 23:05:41.580296 [TestBugCondition_SellQuantity_FeeAdjusted] BUG CONFIRMED: counter SELL quantity = 1 (cfg.OrderSize=1), expected = 0.9999 (fillSz * (1 - feeRate))
+#   fillSz=1, feeRate=0.0001
+# 
+v0.4.8#13120100486763893066
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0

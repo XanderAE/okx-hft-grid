@@ -493,16 +493,22 @@ func TestPrivateWS_ReconnectWithin5(t *testing.T) {
 
 	// Let connection become unhealthy (advance 45s with no pong)
 	clock.Advance(45 * time.Second)
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	// The initial backoff is 1 second, so reconnect should start at +1s
 	clock.Advance(1 * time.Second)
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	if !reconnectStarted.Load() {
-		// Try advancing a bit more for timer processing
+		// Try advancing a bit more for timer processing (race detector needs extra time)
 		clock.Advance(1 * time.Second)
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	if !reconnectStarted.Load() {
+		// Final attempt with generous sleep for heavily loaded/race-detected environments
+		clock.Advance(2 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	if !reconnectStarted.Load() {

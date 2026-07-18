@@ -229,8 +229,10 @@ func (p *Parser) validate(tick *models.TickData) error {
 		return &ValidationError{Symbol: tick.Symbol, Reason: reason}
 	}
 
-	// Rule 6: sequenceId must be strictly greater than previous for this symbol
-	if tick.Symbol != "" {
+	// Rule 6: sequenceId must be strictly greater than previous for this symbol.
+	// When seqId == 0 (e.g., tickers channel omits seqId), skip sequence validation
+	// entirely — do not reject and do not store zero into the tracking map.
+	if tick.SequenceId != 0 && tick.Symbol != "" {
 		prevRaw, loaded := p.lastSequenceIds.Load(tick.Symbol)
 		if loaded {
 			prev := prevRaw.(int64)

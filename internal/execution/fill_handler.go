@@ -128,11 +128,19 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 	// Round counter price to appropriate precision for the instrument
 	counterPrice = roundPriceForSymbol(counterPrice, instId)
 
-	// Find the grid config for this instrument to get order size
+	// Determine counter-order quantity based on fill side and fee
 	orderSize := size // Default to fill size
 	for _, cfg := range h.gridConfigs {
 		if cfg.Symbol == instId {
-			orderSize = cfg.OrderSize
+			if side == "buy" {
+				// BUY filled → counter SELL: use fee-adjusted fill size
+				// In cash mode, OKX deducts maker fee from received asset,
+				// so available balance = fillSz * (1 - feeRate)
+				orderSize = size.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+			} else {
+				// SELL filled → counter BUY: use configured order size (USDT spend)
+				orderSize = cfg.OrderSize
+			}
 			break
 		}
 	}

@@ -1,0 +1,13 @@
+# 2026/07/18 23:05:59.422434 [TestBugCondition_TickParser_ZeroSeqIdAllTicksPass] [rapid] draw numTicks: 2
+# 2026/07/18 23:05:59.422434 [TestBugCondition_TickParser_ZeroSeqIdAllTicksPass] [rapid] draw bidCents: 100
+# 2026/07/18 23:05:59.422434 [TestBugCondition_TickParser_ZeroSeqIdAllTicksPass] BUG CONFIRMED: tick #2 (seqId=0) rejected: validation failed for WIF-USDT: sequence out of order: current=0, previous=0
+#   symbol=WIF-USDT, failureSymbol=WIF-USDT, failureReason=sequence out of order: current=0, previous=0, totalFailures=1
+#   Expected: all ticks with seqId=0 should pass sequence validation
+# 
+v0.4.8#13129973133449146463
+0x0
+0x0
+0x0
+0x0
+0x0
+0x0
