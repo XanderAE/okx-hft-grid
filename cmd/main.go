@@ -994,6 +994,7 @@ func (app *application) placeInitialGridOrders() {
 		// Get current price via gateway (or legacy fallback)
 		var currentPrice decimal.Decimal
 		var bestBid decimal.Decimal
+		var high24h, low24h decimal.Decimal
 		if app.gateway != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			ticker, err := app.gateway.GetTicker(ctx, gridCfg.Symbol)
@@ -1006,6 +1007,8 @@ func (app *application) placeInitialGridOrders() {
 			}
 			currentPrice = ticker.Last
 			bestBid = ticker.BestBid
+			high24h = ticker.High24h
+			low24h = ticker.Low24h
 		} else {
 			var err error
 			currentPrice, err = app.getCurrentPriceLegacy(gridCfg.Symbol)
@@ -1020,6 +1023,21 @@ func (app *application) placeInitialGridOrders() {
 		// of the adaptive range which may be too far from the market.
 		var orders []*models.Order
 		if gridCfg.GridCount == 1 && app.cfg.Execution.TDMode == "cash" {
+			// Price position filter: only buy in the lower half of 24h range
+			if high24h.IsPositive() && low24h.IsPositive() {
+				mid24h := high24h.Add(low24h).Div(decimal.NewFromInt(2))
+				if currentPrice.GreaterThanOrEqual(mid24h) {
+					app.logger.LogInfo("single-grid: skipping BUY, price in upper half of 24h range", map[string]string{
+						"symbol":   gridCfg.Symbol,
+						"price":    currentPrice.String(),
+						"mid_24h":  mid24h.String(),
+						"high_24h": high24h.String(),
+						"low_24h":  low24h.String(),
+					})
+					continue
+				}
+			}
+
 			buyPrice := bestBid
 			if !buyPrice.IsPositive() {
 				// Fallback: 0.1% below current price (~best bid approximation)

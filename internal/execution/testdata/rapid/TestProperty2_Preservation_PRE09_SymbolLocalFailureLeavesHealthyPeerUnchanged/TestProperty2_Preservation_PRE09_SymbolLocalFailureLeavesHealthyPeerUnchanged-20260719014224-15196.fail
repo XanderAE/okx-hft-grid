@@ -1,9 +1,0 @@
-# 2026/07/19 01:42:24.178298 [TestProperty2_Preservation_PRE09_SymbolLocalFailureLeavesHealthyPeerUnchanged] [rapid] draw quantity: 1
-# 2026/07/19 01:42:24.178298 [TestProperty2_Preservation_PRE09_SymbolLocalFailureLeavesHealthyPeerUnchanged] [rapid] draw doge_first: false
-# 2026/07/19 01:42:24.178855 [TestProperty2_Preservation_PRE09_SymbolLocalFailureLeavesHealthyPeerUnchanged] PRE-09 DOGE baseline semantics changed: {InstID:DOGE-USDT TdMode:cash Side:sell OrdType:post_only Px:2.006 Sz:1 ClOrdID:}
-# 
-v0.4.8#16052218429404167733
-0x0
-0x0
-0x0
-0x0

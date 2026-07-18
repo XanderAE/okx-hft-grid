@@ -78,13 +78,13 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 
 	switch side {
 	case "buy":
-		// BUY filled → place SELL at fillPrice + 0.3% (fast cycle, small profit)
+		// BUY filled → place SELL at fillPrice + 0.2% (fast cycle, small profit)
 		counterSide = models.SideSell
-		counterPrice = price.Mul(decimal.NewFromFloat(1.003))
+		counterPrice = price.Mul(decimal.NewFromFloat(1.002))
 	case "sell":
-		// SELL filled → place BUY at fillPrice - 0.3% (fast cycle, small profit)
+		// SELL filled → place BUY at fillPrice - 0.2% (fast cycle, small profit)
 		counterSide = models.SideBuy
-		counterPrice = price.Mul(decimal.NewFromFloat(0.997))
+		counterPrice = price.Mul(decimal.NewFromFloat(0.998))
 	default:
 		h.logger.LogError("unknown fill side", map[string]string{
 			"side": side,
