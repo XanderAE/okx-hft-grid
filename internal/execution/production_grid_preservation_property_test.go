@@ -120,7 +120,8 @@ func TestProperty2_Preservation_PRE09_SymbolLocalFailureLeavesHealthyPeerUnchang
 		if got.InstID != want.InstID || got.Side != want.Side || got.OrdType != want.OrdType || got.Px != want.Px || got.Sz != want.Sz {
 			t.Fatalf("PRE-09 peer output changed: got=%+v want=%+v", got, want)
 		}
-		if got.InstID != "DOGE-USDT" || got.Side != "sell" || got.OrdType != "post_only" || got.Px != "3" || got.Sz != quantity.String() {
+		// Counter SELL price = fillPrice(2) * 1.003 = 2.006, rounded to 5 decimal places for DOGE
+		if got.InstID != "DOGE-USDT" || got.Side != "sell" || got.OrdType != "post_only" || got.Px != "2.006" || got.Sz != quantity.String() {
 			t.Fatalf("PRE-09 DOGE baseline semantics changed: %+v", got)
 		}
 	})

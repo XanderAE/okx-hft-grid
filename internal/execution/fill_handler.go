@@ -68,56 +68,23 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 		return
 	}
 
-	// Find grid levels for this instrument
-	levels, ok := h.gridLevels[instId]
-	if !ok || len(levels) < 2 {
-		h.logger.LogWarn("no grid levels found for instrument", map[string]string{
-			"instId": instId,
-		})
-		return
-	}
-
-	// Find the nearest grid level to the fill price
+	// Find grid levels for this instrument (used for logging only)
+	levels := h.gridLevels[instId]
 	levelIdx := h.findNearestLevel(levels, price)
-	if levelIdx < 0 {
-		h.logger.LogWarn("could not match fill to grid level", map[string]string{
-			"instId": instId,
-			"fillPx": fillPx,
-		})
-		return
-	}
 
-	// Determine counter-order parameters
+	// Determine counter-order parameters using fixed spread (0.3%)
 	var counterSide models.Side
 	var counterPrice decimal.Decimal
 
 	switch side {
 	case "buy":
-		// BUY filled → place SELL at next higher grid level
+		// BUY filled → place SELL at fillPrice + 0.3% (fast cycle, small profit)
 		counterSide = models.SideSell
-		if levelIdx+1 < len(levels) {
-			counterPrice = levels[levelIdx+1]
-		} else {
-			h.logger.LogWarn("buy fill at highest grid level, no counter-order possible", map[string]string{
-				"instId":   instId,
-				"fillPx":   fillPx,
-				"levelIdx": fmt.Sprintf("%d", levelIdx),
-			})
-			return
-		}
+		counterPrice = price.Mul(decimal.NewFromFloat(1.003))
 	case "sell":
-		// SELL filled → place BUY at next lower grid level
+		// SELL filled → place BUY at fillPrice - 0.3% (fast cycle, small profit)
 		counterSide = models.SideBuy
-		if levelIdx-1 >= 0 {
-			counterPrice = levels[levelIdx-1]
-		} else {
-			h.logger.LogWarn("sell fill at lowest grid level, no counter-order possible", map[string]string{
-				"instId":   instId,
-				"fillPx":   fillPx,
-				"levelIdx": fmt.Sprintf("%d", levelIdx),
-			})
-			return
-		}
+		counterPrice = price.Mul(decimal.NewFromFloat(0.997))
 	default:
 		h.logger.LogError("unknown fill side", map[string]string{
 			"side": side,
