@@ -15,10 +15,11 @@ import (
 // BUY filled → place SELL at next higher grid level
 // SELL filled → place BUY at next lower grid level
 type GridFillHandler struct {
-	apiClient   *APIClient
-	gridConfigs []models.GridConfig
-	gridLevels  map[string][]decimal.Decimal // symbol -> computed grid levels (sorted ascending)
-	logger      *monitor.StructuredLogger
+	apiClient        *APIClient
+	gridConfigs      []models.GridConfig
+	gridLevels       map[string][]decimal.Decimal // symbol -> computed grid levels (sorted ascending)
+	logger           *monitor.StructuredLogger
+	inventoryTracker *InventoryTracker
 }
 
 // NewGridFillHandler creates a new GridFillHandler.
@@ -27,13 +28,18 @@ func NewGridFillHandler(
 	gridConfigs []models.GridConfig,
 	gridLevels map[string][]decimal.Decimal,
 	logger *monitor.StructuredLogger,
+	inventoryTracker ...*InventoryTracker,
 ) *GridFillHandler {
-	return &GridFillHandler{
+	h := &GridFillHandler{
 		apiClient:   apiClient,
 		gridConfigs: gridConfigs,
 		gridLevels:  gridLevels,
 		logger:      logger,
 	}
+	if len(inventoryTracker) > 0 && inventoryTracker[0] != nil {
+		h.inventoryTracker = inventoryTracker[0]
+	}
+	return h
 }
 
 // OnFill is the callback invoked when an order fill is received from the private WebSocket.
@@ -80,10 +86,24 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 	case "buy":
 		// BUY filled → place SELL at fillPrice + 0.2% (fast cycle, small profit)
 		counterSide = models.SideSell
-		counterPrice = price.Mul(decimal.NewFromFloat(1.002))
+		if h.inventoryTracker != nil {
+			h.inventoryTracker.RecordBuy(instId, price, size, ordId)
+			sellPrice, _ := h.inventoryTracker.CalculateSellPrice(instId)
+			if sellPrice.IsZero() {
+				// Would be market sell, but for now just use +0.1%
+				counterPrice = price.Mul(decimal.NewFromFloat(1.001))
+			} else {
+				counterPrice = sellPrice
+			}
+		} else {
+			counterPrice = price.Mul(decimal.NewFromFloat(1.002))
+		}
 	case "sell":
 		// SELL filled → place BUY at fillPrice - 0.2% (fast cycle, small profit)
 		counterSide = models.SideBuy
+		if h.inventoryTracker != nil {
+			h.inventoryTracker.ClearPosition(instId)
+		}
 		counterPrice = price.Mul(decimal.NewFromFloat(0.998))
 	default:
 		h.logger.LogError("unknown fill side", map[string]string{

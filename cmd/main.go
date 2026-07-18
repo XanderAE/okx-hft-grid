@@ -122,6 +122,9 @@ type application struct {
 	fillHandler *execution.GridFillHandler
 	reconciler  *execution.Reconciler
 
+	// Inventory tracking
+	inventoryTracker *execution.InventoryTracker
+
 	// Shutdown
 	shutdownOnce sync.Once
 }
@@ -253,6 +256,9 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 
 	// Wire up emergency stop callbacks
 	app.esMgr.RegisterEmergencyCallback(&emergencyStopHandler{app: app})
+
+	// 5.22 InventoryTracker (max $50 per symbol)
+	app.inventoryTracker = execution.NewInventoryTracker(decimal.NewFromFloat(50))
 
 	// Wire up extreme market detector callbacks
 	app.emDetector.RegisterCallback(&extremeMarketHandler{app: app})
@@ -440,6 +446,9 @@ func (app *application) startup() error {
 	// Start per-symbol rebalancers (30-second periodic with ownership filter)
 	app.startRebalancers()
 
+	// Start inventory rebalance loop (time decay + hard stop)
+	go app.inventoryRebalanceLoop()
+
 	app.logger.LogInfo("system startup complete - production composition active", nil)
 	return nil
 }
@@ -577,6 +586,7 @@ func (app *application) startPrivateWSFillHandler() {
 		app.cfg.GridConfigs,
 		gridLevels,
 		app.logger,
+		app.inventoryTracker,
 	)
 
 	// Register gated fill callback on private WS
@@ -662,6 +672,74 @@ type botOrderStoreAdapter struct{}
 
 func (a *botOrderStoreAdapter) IsBotOwned(_ context.Context, _ string, clientOrderID string, _ string) (bool, error) {
 	return isBotOwnedClientOrderID(clientOrderID), nil
+}
+
+// inventoryRebalanceLoop periodically checks positions for time decay and hard stop-loss.
+func (app *application) inventoryRebalanceLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		for _, cfg := range app.cfg.GridConfigs {
+			pos := app.inventoryTracker.GetPosition(cfg.Symbol)
+			if pos == nil {
+				continue
+			}
+			// Get current price
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			tickerObs, err := app.gateway.GetTicker(ctx, cfg.Symbol)
+			cancel()
+			if err != nil {
+				continue
+			}
+			currentPrice := tickerObs.Last
+
+			// Hard stop check (1.5% loss)
+			if app.inventoryTracker.ShouldHardStop(cfg.Symbol, currentPrice, decimal.NewFromFloat(0.015)) {
+				app.logger.LogWarn("HARD STOP: selling at market", map[string]string{
+					"symbol":    cfg.Symbol,
+					"buy_price": pos.BuyPrice.String(),
+					"current":   currentPrice.String(),
+				})
+				// Place market sell
+				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+				req := &execution.OrderRequest{
+					Symbol:    cfg.Symbol,
+					Side:      models.SideSell,
+					OrderType: models.OrderTypeMarket,
+					Quantity:  qty,
+				}
+				app.apiClient.PlaceOrder(req)
+				app.inventoryTracker.ClearPosition(cfg.Symbol)
+				continue
+			}
+
+			// Time decay: recalculate SELL price
+			newSellPrice, hasPos := app.inventoryTracker.CalculateSellPrice(cfg.Symbol)
+			if !hasPos {
+				continue
+			}
+
+			elapsed := time.Since(pos.BuyTime)
+			if elapsed > 30*time.Minute && newSellPrice.IsZero() {
+				// Force market sell after 30 min
+				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+				app.logger.LogWarn("TIME DECAY: force selling at market after 30min", map[string]string{
+					"symbol": cfg.Symbol,
+				})
+				req := &execution.OrderRequest{
+					Symbol:    cfg.Symbol,
+					Side:      models.SideSell,
+					OrderType: models.OrderTypeMarket,
+					Quantity:  qty,
+				}
+				app.apiClient.PlaceOrder(req)
+				app.inventoryTracker.ClearPosition(cfg.Symbol)
+			}
+			// Note: For the time decay price updates (cancel old SELL, place new SELL),
+			// that would be handled by the existing rebalancer which already cancels
+			// orders that are >2% away. The fill handler already uses the tracker for pricing.
+		}
+	}
 }
 
 // loadPersistedState loads orders, positions, and strategy state from the persistence layer.
@@ -1023,6 +1101,16 @@ func (app *application) placeInitialGridOrders() {
 		// of the adaptive range which may be too far from the market.
 		var orders []*models.Order
 		if gridCfg.GridCount == 1 && app.cfg.Execution.TDMode == "cash" {
+			// Inventory checks: skip if already holding or full
+			if app.inventoryTracker != nil && app.inventoryTracker.IsInventoryFull(gridCfg.Symbol) {
+				app.logger.LogInfo("inventory full, skipping BUY", map[string]string{"symbol": gridCfg.Symbol})
+				continue
+			}
+			if app.inventoryTracker != nil && app.inventoryTracker.HasPosition(gridCfg.Symbol) {
+				app.logger.LogInfo("already has position, skipping new BUY", map[string]string{"symbol": gridCfg.Symbol})
+				continue
+			}
+
 			// Price position filter: only buy in the lower half of 24h range
 			if high24h.IsPositive() && low24h.IsPositive() {
 				mid24h := high24h.Add(low24h).Div(decimal.NewFromInt(2))
