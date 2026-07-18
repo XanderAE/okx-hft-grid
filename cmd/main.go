@@ -1008,6 +1008,23 @@ func (app *application) placeInitialGridOrders() {
 			continue
 		}
 
+		// In cash (spot) mode, only place BUY orders during initial grid placement.
+		// The bot has no coin holdings at startup, so SELL orders would be rejected
+		// by OKX for insufficient balance. SELL orders are placed by the fill handler
+		// after a BUY fill is received.
+		if app.cfg.Execution.TDMode == "cash" {
+			buyOrders := make([]*models.Order, 0, len(orders))
+			for _, o := range orders {
+				if o.Side == models.SideBuy {
+					buyOrders = append(buyOrders, o)
+				}
+			}
+			orders = buyOrders
+			if len(orders) == 0 {
+				continue
+			}
+		}
+
 		placed := 0
 		failed := 0
 		for _, order := range orders {
