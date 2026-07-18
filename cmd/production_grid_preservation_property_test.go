@@ -336,7 +336,7 @@ func TestProperty2_Preservation_PRE04_AdaptiveRangeAndGridState(t *testing.T) {
 			halfVol decimal.Decimal
 			allowed []decimal.Decimal
 		}{
-			{name: "minimum_clamp", halfVol: decimal.RequireFromString("0.01"), allowed: []decimal.Decimal{decimal.RequireFromString("0.03"), decimal.RequireFromString("0.015")}},
+			{name: "minimum_clamp", halfVol: decimal.RequireFromString("0.003"), allowed: []decimal.Decimal{decimal.RequireFromString("0.03"), decimal.RequireFromString("0.015"), decimal.RequireFromString("0.005")}},
 			{name: "interior", halfVol: decimal.RequireFromString("0.035"), allowed: []decimal.Decimal{decimal.RequireFromString("0.035")}},
 			{name: "maximum_clamp", halfVol: decimal.RequireFromString("0.10"), allowed: []decimal.Decimal{decimal.RequireFromString("0.08"), decimal.RequireFromString("0.04")}},
 		}

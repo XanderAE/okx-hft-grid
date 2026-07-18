@@ -29,7 +29,7 @@ ticker:
   max_age: 5s
 
 adaptive_range:
-  min_half_width: "0.015"
+  min_half_width: "0.005"
   max_half_width: "0.04"
   symmetric: true
   width_mode: "per_side_half_width"

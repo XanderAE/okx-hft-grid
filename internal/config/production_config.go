@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	ApprovedMinimumHalfWidth = decimal.RequireFromString("0.015")
+	ApprovedMinimumHalfWidth = decimal.RequireFromString("0.005")
 	ApprovedMaximumHalfWidth = decimal.RequireFromString("0.04")
 )
 

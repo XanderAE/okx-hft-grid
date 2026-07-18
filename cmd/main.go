@@ -789,7 +789,8 @@ func (app *application) startStrategies() {
 }
 
 // calculateAdaptiveGridRange fetches the current ticker for a symbol and computes
-// adaptive grid boundaries using symmetric per-side half-width (1.5%-4%).
+// adaptive grid boundaries using symmetric per-side half-width derived from 24h volatility,
+// clamped between configured min (0.5%) and max (4%).
 func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper decimal.Decimal, err error) {
 	// If no gateway, use legacy volatility-based calculation
 	if app.gateway == nil {
@@ -808,18 +809,33 @@ func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper 
 		return decimal.Zero, decimal.Zero, fmt.Errorf("invalid ticker price for %s", symbol)
 	}
 
-	// Use symmetric per-side half-width from approved config (1.5%-4%)
+	// Use symmetric per-side half-width from approved config (0.5%-4%)
 	minHalf := app.cfg.AdaptiveRange.MinHalfWidth
 	maxHalf := app.cfg.AdaptiveRange.MaxHalfWidth
 	if minHalf.IsZero() {
-		minHalf = decimal.NewFromFloat(0.015)
+		minHalf = decimal.NewFromFloat(0.005)
 	}
 	if maxHalf.IsZero() {
 		maxHalf = decimal.NewFromFloat(0.04)
 	}
 
-	// For the production gateway path, use minHalf as default
-	rangePercent := minHalf
+	// Calculate volatility from 24h high/low (same formula as legacy path)
+	var rangePercent decimal.Decimal
+	if ticker.High24h.IsPositive() && ticker.Low24h.IsPositive() && currentPrice.IsPositive() {
+		volatility := ticker.High24h.Sub(ticker.Low24h).Div(currentPrice)
+		halfVol := volatility.Div(decimal.NewFromInt(2))
+		// Clamp between minHalf and maxHalf
+		if halfVol.LessThan(minHalf) {
+			rangePercent = minHalf
+		} else if halfVol.GreaterThan(maxHalf) {
+			rangePercent = maxHalf
+		} else {
+			rangePercent = halfVol
+		}
+	} else {
+		// Fallback when 24h data is unavailable
+		rangePercent = minHalf
+	}
 
 	// Symmetric: lower = price*(1-r), upper = price*(1+r)
 	lower = currentPrice.Mul(decimal.NewFromInt(1).Sub(rangePercent))
@@ -828,6 +844,8 @@ func (app *application) calculateAdaptiveGridRange(symbol string) (lower, upper 
 	app.logger.LogInfo("adaptive grid range calculated", map[string]string{
 		"symbol":        symbol,
 		"current_price": currentPrice.String(),
+		"high_24h":      ticker.High24h.String(),
+		"low_24h":       ticker.Low24h.String(),
 		"half_width":    rangePercent.String(),
 		"lower":         lower.String(),
 		"upper":         upper.String(),

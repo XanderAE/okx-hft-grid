@@ -128,6 +128,8 @@ type TickerObservation struct {
 	Last              decimal.Decimal
 	BestBid           decimal.Decimal
 	BestAsk           decimal.Decimal
+	High24h           decimal.Decimal
+	Low24h            decimal.Decimal
 	ExchangeTimestamp time.Time
 	ReceivedAt        time.Time
 }
@@ -506,11 +508,13 @@ func (g *OKXGateway) GetTicker(ctx context.Context, symbol string) (TickerObserv
 		Code string `json:"code"`
 		Msg  string `json:"msg"`
 		Data []struct {
-			InstID string `json:"instId"`
-			Last   string `json:"last"`
-			BidPx  string `json:"bidPx"`
-			AskPx  string `json:"askPx"`
-			Ts     string `json:"ts"`
+			InstID  string `json:"instId"`
+			Last    string `json:"last"`
+			BidPx   string `json:"bidPx"`
+			AskPx   string `json:"askPx"`
+			High24h string `json:"high24h"`
+			Low24h  string `json:"low24h"`
+			Ts      string `json:"ts"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(bodyBytes, &raw); err != nil {
@@ -531,6 +535,8 @@ func (g *OKXGateway) GetTicker(ctx context.Context, symbol string) (TickerObserv
 	obs.Last, _ = decimal.NewFromString(d.Last)
 	obs.BestBid, _ = decimal.NewFromString(d.BidPx)
 	obs.BestAsk, _ = decimal.NewFromString(d.AskPx)
+	obs.High24h, _ = decimal.NewFromString(d.High24h)
+	obs.Low24h, _ = decimal.NewFromString(d.Low24h)
 	obs.ExchangeTimestamp = okxTimestampToTime(d.Ts)
 	return obs, nil
 }

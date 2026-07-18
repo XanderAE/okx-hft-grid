@@ -177,7 +177,7 @@ func TestStartupOrder(t *testing.T) {
 		PrivateWebSocketURL: sim.privateWSURL(),
 		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
@@ -238,7 +238,7 @@ func TestNoRiskBeforeReady(t *testing.T) {
 		PrivateWebSocketURL: sim.privateWSURL(),
 		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
@@ -299,7 +299,7 @@ func TestRecoveryBeforeInitialGrid(t *testing.T) {
 		PrivateWebSocketURL: sim.privateWSURL(),
 		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
@@ -410,7 +410,7 @@ func TestOwnedCleanupOnly(t *testing.T) {
 		PrivateWebSocketURL: wsURL,
 		TradingEnabled:      false, // reconcile-only to isolate cleanup
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
@@ -463,7 +463,7 @@ func TestStartupFailureClosed(t *testing.T) {
 		RESTURL:        "http://127.0.0.1:1", // Unreachable to simulate failure
 		TradingEnabled: true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
@@ -524,7 +524,7 @@ func TestProductionComposition(t *testing.T) {
 		PrivateWebSocketURL: sim.privateWSURL(),
 		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
-			MinHalfWidth: decimal.NewFromFloat(0.015),
+			MinHalfWidth: decimal.NewFromFloat(0.005),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
 			Symmetric:    true,
 		},
