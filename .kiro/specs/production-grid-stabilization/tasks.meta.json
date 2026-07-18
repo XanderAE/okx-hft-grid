@@ -1,0 +1,267 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration property tests on UNFIXED code": {
+      "status": "passed",
+      "failingExample": "Expected-failure exploration run (exact minimized outputs):\nEXP-01 rapid.seed=14018247128244709440: REPRODUCED EXP-01 seed=57345 fake_time=2025-01-02T03:04:05Z exchange_script={WS original,WS duplicate x1,REST replay; all same fill/order/cumulative=100} observed_state={place_calls:3,counter_qtys:[100 100 100],terminal=accepted_ack_only} minimal_counterexample={ws_duplicate_count:1,expected_place_calls:1,actual_place_calls:3} network_record={dns:0,dial:0,real_requests:0}\nEXP-02 rapid.seed=17742170361573387222: REPRODUCED EXP-02 seed=57346 fake_time=2025-01-02T03:04:05Z exchange_script={cumulative_buy_fill:100,cumulative_buy_fill:150} observed_state={place_calls:2,counter_qtys:[100 100],total_coverage:200,no_persisted_watermark:true} minimal_counterexample={cumulative:[100,150],expected_deltas:[100,50],actual_qtys:[100 100]}\nEXP-03 rapid.seed=3810277663285168363: REPRODUCED EXP-03 seed=57347 fake_time=2025-01-02T03:04:05Z exchange_script={place accepted,response dropped,crash,replay same fill,query-by-client-id expected} observed_state={exchange_effects:2,clOrdIds:[\"\" \"\"],query_calls:0} minimal_counterexample={accepted_before_loss:true,replay_count:1,expected_effects:1,actual_effects:2}\nEXP-04 rapid.seed=7794174780807362517: REPRODUCED EXP-04 seed=57348 fake_time={last_verified:2025-01-02T03:04:05Z,detected:2025-01-02T03:04:55Z,reconnect_start:2025-01-02T03:04:56Z} exchange_script={private_ws:silent_after_subscribe,no_close_frame:true,no_valid_pong:true} observed_state={heartbeat:25s,timeout:30s,detection_latency:50s,reconnect_latency:1s,immediate_reconcile:false} minimal_counterexample={silent_peer:true,required_detection_max:45s,actual_detection:50s} network_record={dns:0,dial:0,real_requests:0}\nEXP-05 rapid.seed=14188073009362748306: REPRODUCED EXP-05 seed=57349 fake_time=2025-01-02T03:04:05Z trigger=startup exchange_script={REST fills:[eligible DOGE buy cumulative=100],orders:[],positions:[]} observed_state={order_queries:1,position_queries:1,fill_queries:0,compensated_fills:0,counter_intents:0} minimal_counterexample={missed_fills:1,expected_compensated:1,actual_compensated:0}\nEXP-06 rapid.seed=11564434356360609803: REPRODUCED EXP-06 seed=57350 fake_time={start:2025-01-02T03:04:05Z,now:2025-01-02T03:04:35Z,elapsed:30s} exchange_script={periodic_tick_only,no_network} observed_state={configured_interval:0,fallback_interval:1m0s,reconciliation_due:false,reconciliation_started:false} minimal_counterexample={elapsed_seconds:30,required_interval:30s,actual_interval:1m0s} network_record={dns:0,dial:0,real_requests:0}\nEXP-07 rapid.seed=10718940740369732057: REPRODUCED EXP-07 seed=57351 fake_time=2025-01-02T03:04:05Z exchange_script={capture single order JSON,capture batch order JSON,ack both} observed_state={payload_count:2,violations:[\"payload[0].tdMode=cross\" \"payload[0].clOrdId=missing\" \"payload[1].tdMode=cross\" \"payload[1].clOrdId=missing\"]} minimal_counterexample={symbol:DOGE-USDT,single_and_batch:true,required_tdMode:cash,required_clOrdId:nonempty}\nEXP-08 rapid.seed=12551195893906951050: REPRODUCED EXP-08 seed=57352 fake_time=2025-01-02T03:04:05Z exchange_script={instrument:{symbol:DOGE-USDT,tickSz:0.0025,lotSz:1,minSz:1},candidate_price:1.0001} observed_state={symbol_precision_round:1.0001,tick_remainder:0.0001,metadata_queries:0} minimal_counterexample={tickSz:0.0025,candidate:1.0001,emitted:1.0001}\nEXP-09 rapid.seed=17877402676942443998: REPRODUCED EXP-09 seed=57353 fake_time=2025-01-02T03:04:05Z exchange_script={stale_owned_order deviation=2.001%,pre_cancel_state=partially_filled(1),cancel_ack=code0,race_then_state=filled} observed_state={cancel_result_success:true,request_paths:[\"POST /api/v5/trade/cancel-order\"],terminal_query:false,fill_processed:false,replacement_guard:false} minimal_counterexample={partial_fill:1,cancel_ack_only:true}\nEXP-10 rapid.seed=1412213351847570418: REPRODUCED EXP-10 seed=57354 fake_time=2025-01-02T03:04:35Z exchange_script={loopback pending:[owned(clOrdId=pg-v1-owned),manual(clOrdId=manual-human)],cancel_ack:all} observed_state={cancelled_order_ids:[\"owned-1\" \"manual-1\"],manual_cancelled:true,ownership_lineage_checked:false} minimal_counterexample={owned_orders:1,manual_orders:1,expected_cancelled:[owned-1],actual:[\"owned-1\" \"manual-1\"]} network_record={loopback_requests:3,dns_external:0,dial_external:0,real_requests:0}\nEXP-11 rapid.seed=17532195510445923616: REPRODUCED EXP-11 seed=57355 fake_time=2025-01-02T03:04:05Z filesystem_script={isolated legacy WAL DB with one committed row,target absent then opened,systemctl_executed:false} observed_state={wal_present:true,target_created:true,target_order_count:0,missing_unit_directives:[\"StateDirectory=okx-hft-grid\" \"StateDirectoryMode=0750\" \"ReadWritePaths=/var/lib/okx-hft-grid\" \"Type=notify\"],synchronous:NORMAL,migration_marker:false} minimal_counterexample={legacy_rows:1,target_rows:0,quantity:1} network_record={dns:0,dial:0,real_requests:0}\nEXP-12 rapid.seed=14194585843452080528: REPRODUCED EXP-12 seed=57356 fake_time=2025-01-02T03:04:05Z exchange_script={WIF counter_SELL reject,DOGE eligible fill,WIF SELL fill->counter_BUY} observed_state={requests:[WIF-USDT:sell:10 DOGE-USDT:sell:10 WIF-USDT:buy:10],wif_safe_stop:false,wif_risk_increasing_sent:true,doge_continued:true,shared_network_io:false} minimal_counterexample={symbols:[WIF,DOGE],local_failure:WIF,bad_effect:WIF_BUY_after_uncertainty}\nEXP-13 rapid.seed=4591872120070295414: REPRODUCED EXP-13 seed=57357 fake_time=2025-01-02T03:04:05Z exchange_script={external_alert_success,external_alert_failure,retries:0} observed_state={success_journal_alert_raised:false,failure_journal_alert_raised:false,success_journal_bytes:0,failure_journal_bytes:294} minimal_counterexample={configured_channels:1,external_success:true,mandatory_journal_evidence:false} network_record={dns:0,dial:0,real_requests:0}\nEXP-14 rapid.seed=6446202297437701454: REPRODUCED EXP-14 seed=57358 fake_time=2025-01-02T03:04:05Z exchange_script={attempt_forbidden_endpoint:https://www.okx.com,test_mode:true,intercept_before_real_io:true} observed_state={guard_error:<nil>,transport_calls:1,intercepted_url:https://www.okx.com/api/v5/account/balance} minimal_counterexample={forbidden_endpoint:https://www.okx.com,expected_transport_calls:0,actual:1} network_record={dns:0,dial:0,external_requests:0,intercepted_requests:1}",
+      "lastRunTimestamp": 1784310233243
+    },
+    "2. Write observation-first preservation property tests on UNFIXED code": {
+      "status": "passed",
+      "lastRunTimestamp": 1784312706148
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration property tests on UNFIXED code": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309752941
+      },
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309786638
+      },
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784310450440
+      }
+    ],
+    "2. Write observation-first preservation property tests on UNFIXED code": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753427
+      },
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784310463805
+      },
+      {
+        "executionId": "a670fa99-5192-4fd7-bb94-fd38dceaae33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784312004345
+      },
+      {
+        "executionId": "a670fa99-5192-4fd7-bb94-fd38dceaae33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784312767764
+      }
+    ],
+    "3.1 Implement production-network guardrails and strict no-sed configuration": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753521
+      },
+      {
+        "executionId": "e62cc513-2b1b-4cd6-b6c8-769a11bd6ad0",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784312890871
+      },
+      {
+        "executionId": "e62cc513-2b1b-4cd6-b6c8-769a11bd6ad0",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784313691470
+      }
+    ],
+    "3.2 Implement durable schema, fill ledger, intent, and transactional outbox": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753610
+      },
+      {
+        "executionId": "e62cc513-2b1b-4cd6-b6c8-769a11bd6ad0",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784313716980
+      }
+    ],
+    "3.3 Implement systemd StateDirectory lifecycle and WAL-aware legacy migration": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753739
+      },
+      {
+        "executionId": "36e1f404-feb1-4ff2-aaa5-fb2cc8254042",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784314825471
+      },
+      {
+        "executionId": "36e1f404-feb1-4ff2-aaa5-fb2cc8254042",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784315385600
+      }
+    ],
+    "3.4 Implement cash/context/structured ExchangeGateway and exact instrument rules": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753823
+      },
+      {
+        "executionId": "36e1f404-feb1-4ff2-aaa5-fb2cc8254042",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784315398230
+      },
+      {
+        "executionId": "36e1f404-feb1-4ff2-aaa5-fb2cc8254042",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784316150753
+      }
+    ],
+    "3.5 Implement Private_WS 20/45/5 liveness and recovery state machine": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753891
+      },
+      {
+        "executionId": "0d94a81d-084d-4ca3-bf59-3152e50b4721",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784316309048
+      },
+      {
+        "executionId": "0d94a81d-084d-4ca3-bf59-3152e50b4721",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784317028226
+      }
+    ],
+    "3.6 Implement immediate/30-second reconciliation and committed watermarks": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309753982
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784317080759
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784317965536
+      }
+    ],
+    "3.7 Implement scoped Safe_Stop, operation gating, and symbol isolation": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754059
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784317972024
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784318583369
+      }
+    ],
+    "3.8 Implement ownership-safe rebalancer with terminal confirmation and race handling": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754175
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784318589857
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784319514717
+      }
+    ],
+    "3.9 Implement machine health, structured observability, and journald-first alerts": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754230
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784319521294
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784320139389
+      }
+    ],
+    "3.10 Wire production startup and remove unsafe inline paths": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754291
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784320148004
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784321563524
+      }
+    ],
+    "4.1 Run final local integration, race, and full validation": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754364
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784321570574
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784347954266
+      }
+    ],
+    "4.2 Finalize manual Singapore production runbook and queue handoff": [
+      {
+        "executionId": "bb5b7c86-6b38-414e-91c9-6ccd66887d46",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784309754429
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784347961802
+      },
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348239658
+      }
+    ],
+    "3. Implement the production-grid stabilization fix": [
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784321563703
+      }
+    ],
+    "4. Validate and hand off": [
+      {
+        "executionId": "5fd351a4-8cae-479e-a1c6-f7c5fea3ea5b",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348239743
+      }
+    ]
+  }
+}

@@ -154,7 +154,7 @@
     - 使用 `decimal` 库确保精度
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 7.2 实现网格订单布局
+  - [x] 7.2 实现网格订单布局
     - 实现 `PlaceGridOrders(levels, currentPrice, config)`
     - 当前价格下方放 BUY 订单，上方放 SELL 订单
     - 等于当前价格的格位不放订单
@@ -163,7 +163,7 @@
     - POST_ONLY 被拒绝时重试 3 次（间隔 1000ms）
     - _Requirements: 3.6, 3.7, 3.8, 3.10_
 
-  - [ ] 7.3 实现网格成交处理
+  - [x] 7.3 实现网格成交处理
     - 实现 `HandleGridFill(fill, gridState, config)`
     - BUY 成交 → 在上一格放 SELL（quantity 相同）
     - SELL 成交 → 在下一格放 BUY（quantity 相同）
@@ -174,39 +174,39 @@
     - 下单失败重试 3 次（间隔 1s），失败后标记需人工干预
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
 
-  - [ ] 7.4 编写网格价位单调性属性测试
+  - [x] 7.4 编写网格价位单调性属性测试
     - **Property 2: Grid Level Monotonicity and Structure**
     - **Validates: Requirements 3.3, 3.4, 3.5**
 
-  - [ ] 7.5 编写等差网格间距属性测试
+  - [x] 7.5 编写等差网格间距属性测试
     - **Property 3: Grid Arithmetic Equal Intervals**
     - **Validates: Requirement 3.1**
 
-  - [ ] 7.6 编写等比网格比率属性测试
+  - [x] 7.6 编写等比网格比率属性测试
     - **Property 4: Grid Geometric Equal Ratios**
     - **Validates: Requirement 3.2**
 
-  - [ ] 7.7 编写网格订单方向属性测试
+  - [x] 7.7 编写网格订单方向属性测试
     - **Property 5: Grid Order Direction Consistency**
     - **Validates: Requirements 3.6, 3.7**
 
-  - [ ] 7.8 编写网格互斥属性测试
+  - [x] 7.8 编写网格互斥属性测试
     - **Property 6: Grid Level Mutual Exclusion**
     - **Validates: Requirement 3.8**
 
-  - [ ] 7.9 编写网格成交 counter-order 属性测试
+  - [x] 7.9 编写网格成交 counter-order 属性测试
     - **Property 7: Grid Fill Counter-Order Placement**
     - **Validates: Requirements 4.1, 4.2, 4.6**
 
-  - [ ] 7.10 编写网格利润保证属性测试
+  - [x] 7.10 编写网格利润保证属性测试
     - **Property 8: Grid Profit Guarantee**
     - **Validates: Requirement 4.3**
 
-  - [ ] 7.11 编写网格持仓上限属性测试
+  - [x] 7.11 编写网格持仓上限属性测试
     - **Property 9: Grid Position Bound**
     - **Validates: Requirement 4.5**
 
-  - [ ] 7.12 编写网格已实现盈亏属性测试
+  - [x] 7.12 编写网格已实现盈亏属性测试
     - **Property 33: Grid Realized PnL Calculation**
     - **Validates: Requirement 4.4**
 
@@ -219,7 +219,7 @@
     - 使用环形缓冲区存储价格历史
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 8.2 实现 Z-Score 计算与信号生成
+  - [x] 8.2 实现 Z-Score 计算与信号生成
     - 计算 Z_Score = (currentPrice - mean) / stdDev
     - stdDev = 0 时抑制信号生成，保留前一信号状态
     - 数据不足 lookbackPeriod 时抑制信号
@@ -229,15 +229,15 @@
     - 实现冷却期控制（cooldownMs 范围 [100, 60000]）
     - _Requirements: 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
 
-  - [ ] 8.3 编写均值回归信号方向属性测试
+  - [x] 8.3 编写均值回归信号方向属性测试
     - **Property 10: Mean Reversion Signal Direction**
     - **Validates: Requirements 5.3, 5.4, 5.6, 5.7, 5.8**
 
-  - [ ] 8.4 编写 EMA 有界性属性测试
+  - [x] 8.4 编写 EMA 有界性属性测试
     - **Property 11: EMA Boundedness**
     - **Validates: Requirement 5.2**
 
-  - [ ] 8.5 编写信号冷却期属性测试
+  - [x] 8.5 编写信号冷却期属性测试
     - **Property 12: Signal Cooldown Enforcement**
     - **Validates: Requirement 5.9**
 
@@ -250,7 +250,7 @@
     - API 拒绝时设置状态为 REJECTED 并记录原因
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [ ] 9.2 实现 REST API 调用与重试机制
+  - [x] 9.2 实现 REST API 调用与重试机制
     - 创建 `api_client.go`：封装 OKX REST API 调用
     - 实现 HMAC-SHA256 请求签名（timestamp 在 30 秒内）
     - TLS 1.2+ 且验证服务器证书（验证失败不发送凭证）
@@ -259,7 +259,7 @@
     - 重试耗尽标记订单为 ERROR 并发出失败事件
     - _Requirements: 6.5, 6.6, 6.7, 13.1, 13.2, 13.6_
 
-  - [ ] 9.3 实现批量下单与对账
+  - [x] 9.3 实现批量下单与对账
     - 实现 `BatchPlaceOrders()`：每批最多 20 单，返回逐单结果
     - 实现 60 秒定期对账：查询交易所订单/持仓状态
     - 发现不一致以交易所为准更新本地状态
@@ -278,15 +278,15 @@
     - **Property 31: Reconciliation Exchange Authority**
     - **Validates: Requirement 6.8**
 
-  - [ ] 9.7 编写 HMAC-SHA256 签名属性测试
+  - [x] 9.7 编写 HMAC-SHA256 签名属性测试
     - **Property 25: HMAC-SHA256 Request Signing**
     - **Validates: Requirement 13.2**
 
 - [ ] 10. Checkpoint - 核心交易逻辑验证
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. 风控管理器
-  - [ ] 11.1 实现风控规则检查引擎
+- [x] 11. 风控管理器
+  - [x] 11.1 实现风控规则检查引擎
     - 在 `internal/risk/` 中创建 `risk_manager.go`
     - 实现单币种持仓限额检查（position qty × market price > maxPositionPerSymbol → 拒绝）
     - 实现总投资组合限额检查（sum(abs(notional)) > maxTotalPosition → 拒绝）
@@ -297,7 +297,7 @@
     - 风控检查目标延迟 < 50μs（p99）
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 12.3_
 
-  - [ ] 11.2 实现紧急停止机制
+  - [x] 11.2 实现紧急停止机制
     - 日亏损低于 -emergencyStopLoss 时触发 Emergency_Stop
     - 1 秒内：撤销所有挂单、停止所有策略、发送 CRITICAL 告警
     - Emergency_Stop 激活期间拒绝所有交易操作
@@ -305,38 +305,38 @@
     - 收到手动确认后解除 Emergency_Stop
     - _Requirements: 7.7, 7.8, 7.9, 7.10_
 
-  - [ ] 11.3 实现极端行情检测
+  - [x] 11.3 实现极端行情检测
     - 检测 1 分钟内价格变化超过 5%
     - 检测 spread 超过滚动 5 分钟平均 spread 的 3 倍
     - 触发时：撤销所有网格订单、暂停均值回归策略、发送告警
     - _Requirements: 14.4_
 
-  - [ ] 11.4 编写风控持仓限额属性测试
+  - [x] 11.4 编写风控持仓限额属性测试
     - **Property 14: Risk Check Position Limit**
     - **Validates: Requirements 7.1, 7.2**
 
-  - [ ] 11.5 编写日亏损限额属性测试
+  - [x] 11.5 编写日亏损限额属性测试
     - **Property 15: Risk Check Daily Loss Limit**
     - **Validates: Requirement 7.3**
 
-  - [ ] 11.6 编写下单频率限制属性测试
+  - [x] 11.6 编写下单频率限制属性测试
     - **Property 16: Risk Check Order Rate Limit**
     - **Validates: Requirement 7.4**
 
-  - [ ] 11.7 编写紧急停止属性测试
+  - [x] 11.7 编写紧急停止属性测试
     - **Property 17: Emergency Stop Irreversibility**
     - **Validates: Requirements 7.7, 7.8, 7.9**
 
-  - [ ] 11.8 编写挂单数和价差限制属性测试
+  - [x] 11.8 编写挂单数和价差限制属性测试
     - **Property 32: Risk Check Open Orders and Spread Limits**
     - **Validates: Requirements 7.5, 7.6**
 
-  - [ ] 11.9 编写极端行情检测属性测试
+  - [x] 11.9 编写极端行情检测属性测试
     - **Property 23: Extreme Market Condition Detection**
     - **Validates: Requirement 14.4**
 
 - [ ] 12. 数据持久化层
-  - [ ] 12.1 实现 SQLite 状态持久化
+  - [x] 12.1 实现 SQLite 状态持久化
     - 在 `internal/persistence/` 中创建 `store.go`
     - 使用 SQLite + WAL 模式存储订单状态、持仓数据、策略状态
     - 状态变更后 1 秒内触发持久化（write-ahead logging 保证持久性）
@@ -344,7 +344,7 @@
     - 损坏检测：无法读取时停止交易并通知运维，保留损坏文件
     - _Requirements: 10.2, 10.3, 10.5_
 
-  - [ ] 12.2 实现环形缓冲区时序数据存储
+  - [x] 12.2 实现环形缓冲区时序数据存储
     - 在 `internal/persistence/` 中创建 `ring_buffer.go`
     - 使用 memory-mapped file 或内存环形缓冲区
     - 可配置容量（默认 1,000,000 records/instrument）
@@ -361,21 +361,21 @@
     - **Validates: Requirement 10.4**
 
 - [ ] 13. 监控与告警系统
-  - [ ] 13.1 实现 Prometheus 指标暴露
+  - [x] 13.1 实现 Prometheus 指标暴露
     - 在 `internal/monitor/` 中创建 `metrics.go`
     - 暴露指标：order_latency_ms（直方图）、orders_per_second（计数器）、error_rate（比率）
     - 更新间隔 ≤ 5 秒
     - 提供 `/metrics` HTTP 端点
     - _Requirements: 11.1_
 
-  - [ ] 13.2 实现告警通知系统
+  - [x] 13.2 实现告警通知系统
     - 创建 `alerter.go`：支持 Telegram 和 Discord bot 推送
     - Emergency_Stop 触发时 5 秒内发送 CRITICAL 告警（含触发原因和组合状态摘要）
     - 对账发现无法自动修复的差异时 30 秒内发送 WARNING 告警
     - 通知渠道不可达时重试 3 次（间隔 10s），仍失败则本地记录 CRITICAL 日志
     - _Requirements: 11.2, 11.3, 11.5_
 
-  - [ ] 13.3 实现结构化日志系统
+  - [x] 13.3 实现结构化日志系统
     - 创建 `logger.go`：结构化 JSON 日志输出到 stdout（供 journald 收集）
     - 每条交易日志包含：timestamp(ms精度)、action_type、instrument、quantity、price、order_id、result
     - 日志保留最少 30 天
@@ -389,8 +389,8 @@
 - [ ] 14. Checkpoint - 风控和监控验证
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 15. 策略引擎与组件集成
-  - [ ] 15.1 实现策略引擎调度器
+- [x] 15. 策略引擎与组件集成
+  - [x] 15.1 实现策略引擎调度器
     - 在 `internal/strategy/` 中创建 `engine.go`
     - 管理 Grid 和 MeanReversion 策略实例生命周期（加载/启动/停止）
     - 将行情事件路由到对应策略
@@ -399,7 +399,7 @@
     - 信号计算目标 < 500μs（p99）
     - _Requirements: 12.2_
 
-  - [ ] 15.2 实现故障恢复与重启流程
+  - [x] 15.2 实现故障恢复与重启流程
     - 在 `cmd/` 中创建 `main.go`：系统入口和初始化流程
     - 启动时加载持久化状态 → 连接交易所 → 对账 → 60 秒内完成恢复
     - 对账期间交易所不可达超过 60 秒 → 停止交易并通知运维
@@ -408,14 +408,14 @@
     - 重连成功后全量快照 + 状态验证完成后才恢复策略
     - _Requirements: 10.3, 10.6, 10.7, 14.1, 14.2, 14.3, 14.5_
 
-  - [ ] 15.3 实现 systemd 服务配置
+  - [x] 15.3 实现 systemd 服务配置
     - 创建 `deploy/okx-hft-grid.service` systemd unit 文件
     - 配置：非 root 用户运行、崩溃后重启（5s 延迟，60s 内最多 3 次）
     - 日志输出到 journald
     - 环境变量文件引用（存放 API 凭证）
     - _Requirements: 13.3, 14.6_
 
-  - [ ] 15.4 集成端到端交易循环
+  - [x] 15.4 集成端到端交易循环
     - 连接所有组件：MarketData → OrderBook → StrategyEngine → RiskManager → OrderExecution
     - 实现主事件循环（goroutine + channel 架构）
     - 确保端到端延迟 < 2ms（p99）
@@ -423,7 +423,7 @@
     - 支持最多 100 个活跃交易对，总内存 < 2GB
     - _Requirements: 12.4, 12.5, 12.6, 12.7_
 
-  - [ ] 15.5 编写端到端集成测试
+  - [x] 15.5 编写端到端集成测试
     - 使用模拟 OKX 服务器测试完整交易循环
     - 覆盖：行情接收 → 策略计算 → 风控 → 下单 → 成交 → counter order
     - 覆盖：断连重连恢复流程

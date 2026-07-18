@@ -2,6 +2,7 @@ package execution
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/tls"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"time"
 
@@ -41,33 +43,58 @@ const (
 // APIClient encapsulates OKX REST API calls with HMAC-SHA256 signing,
 // TLS 1.2+ enforcement, and retry logic for rate limiting and server errors.
 type APIClient struct {
-	baseURL     string
-	credentials *config.Credentials
-	httpClient  *http.Client
-	rateLimiter ratelimiter.RateLimiter
+	baseURL       string
+	credentials   *config.Credentials
+	httpClient    *http.Client
+	rateLimiter   ratelimiter.RateLimiter
+	endpointGuard config.EndpointGuard
 }
 
-// NewAPIClient creates a new APIClient configured with TLS 1.2+ and certificate verification.
+// NewAPIClient creates a client with the deny-by-default automated-validation
+// policy. Existing unit/replay callers can reach loopback only; production
+// composition must explicitly supply a validated ProductionNetworkGuard.
 func NewAPIClient(baseURL string, creds *config.Credentials, rl ratelimiter.RateLimiter) *APIClient {
+	return NewAPIClientWithEndpointGuard(baseURL, creds, rl, config.DefaultAutomatedValidationGuard())
+}
+
+// NewAPIClientWithEndpointGuard creates an API client with an explicit target
+// policy. A nil policy fails closed by falling back to automated loopback-only
+// validation.
+func NewAPIClientWithEndpointGuard(baseURL string, creds *config.Credentials, rl ratelimiter.RateLimiter, endpointGuard config.EndpointGuard) *APIClient {
+	if endpointGuard == nil {
+		endpointGuard = config.DefaultAutomatedValidationGuard()
+	}
+
 	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		// InsecureSkipVerify defaults to false, ensuring certificate verification
 	}
 
+	dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}
 	transport := &http.Transport{
 		TLSClientConfig: tlsConfig,
+		DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			if err := endpointGuard.ValidateDialAddress(address); err != nil {
+				return nil, err
+			}
+			return dialer.DialContext(ctx, network, address)
+		},
 	}
 
 	httpClient := &http.Client{
 		Transport: transport,
 		Timeout:   30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return endpointGuard.ValidateEndpoint(req.URL.String())
+		},
 	}
 
 	return &APIClient{
-		baseURL:     baseURL,
-		credentials: creds,
-		httpClient:  httpClient,
-		rateLimiter: rl,
+		baseURL:       baseURL,
+		credentials:   creds,
+		httpClient:    httpClient,
+		rateLimiter:   rl,
+		endpointGuard: endpointGuard,
 	}
 }
 
@@ -80,9 +107,33 @@ func (c *APIClient) SignRequest(method, path, body string, timestamp string) str
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
 
+// hardTTL returns the instrument rules hard TTL for the gateway. The value is
+// kept here to avoid a circular dependency.
+func (c *APIClient) hardTTL() time.Duration {
+	return 15 * time.Minute
+}
+
 // DoRequest executes a signed HTTP request to the OKX REST API with retry logic.
 // It handles HTTP 429 with exponential backoff and HTTP 5xx with fixed interval retries.
+// This method uses a background context; prefer DoRequestContext for deadline-aware calls.
 func (c *APIClient) DoRequest(method, path string, body interface{}) (*http.Response, error) {
+	return c.DoRequestContext(context.Background(), method, path, body)
+}
+
+// DoRequestContext executes a signed HTTP request with the given context for
+// deadline/cancellation support. It handles HTTP 429 with exponential backoff
+// and HTTP 5xx with fixed interval retries, respecting context cancellation.
+func (c *APIClient) DoRequestContext(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
+	if c == nil || c.endpointGuard == nil {
+		return nil, fmt.Errorf("request blocked: endpoint guard is required")
+	}
+	targetURL := c.baseURL + path
+	// This check intentionally precedes body serialization, signing and
+	// http.NewRequest so forbidden targets fail before request construction.
+	if err := c.endpointGuard.ValidateEndpoint(targetURL); err != nil {
+		return nil, fmt.Errorf("request blocked by endpoint guard: %w", err)
+	}
+
 	var bodyBytes []byte
 	var err error
 
@@ -101,10 +152,15 @@ func (c *APIClient) DoRequest(method, path string, body interface{}) (*http.Resp
 	retries5xx := 0
 
 	for {
+		// Respect context cancellation between retries
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("request cancelled: %w", err)
+		}
+
 		timestamp := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 		signature := c.SignRequest(method, path, bodyStr, timestamp)
 
-		req, err := http.NewRequest(method, c.baseURL+path, bytes.NewReader(bodyBytes))
+		req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, bytes.NewReader(bodyBytes))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
@@ -132,7 +188,11 @@ func (c *APIClient) DoRequest(method, path string, body interface{}) (*http.Resp
 			if backoff > retry429MaxBackoff {
 				backoff = retry429MaxBackoff
 			}
-			time.Sleep(backoff)
+			select {
+			case <-ctx.Done():
+				return nil, fmt.Errorf("request cancelled during backoff: %w", ctx.Err())
+			case <-time.After(backoff):
+			}
 			continue
 		}
 
@@ -144,7 +204,11 @@ func (c *APIClient) DoRequest(method, path string, body interface{}) (*http.Resp
 				lastErr = fmt.Errorf("HTTP %d: server error after %d retries", resp.StatusCode, retry5xxMaxRetries)
 				break
 			}
-			time.Sleep(retry5xxInterval)
+			select {
+			case <-ctx.Done():
+				return nil, fmt.Errorf("request cancelled during retry: %w", ctx.Err())
+			case <-time.After(retry5xxInterval):
+			}
 			continue
 		}
 
@@ -162,6 +226,7 @@ type OKXOrderRequest struct {
 	OrdType string `json:"ordType"`
 	Px      string `json:"px,omitempty"`
 	Sz      string `json:"sz"`
+	ClOrdID string `json:"clOrdId,omitempty"`
 }
 
 // OKXResponse represents a generic OKX API response.
@@ -173,16 +238,17 @@ type OKXResponse struct {
 
 // OKXOrderData represents the order data in an OKX API order response.
 type OKXOrderData struct {
-	OrdID  string `json:"ordId"`
+	OrdID   string `json:"ordId"`
 	ClOrdID string `json:"clOrdId"`
-	SCode  string `json:"sCode"`
-	SMsg   string `json:"sMsg"`
+	SCode   string `json:"sCode"`
+	SMsg    string `json:"sMsg"`
 }
 
 // OKXCancelRequest represents the OKX API request body for canceling an order.
 type OKXCancelRequest struct {
-	InstID string `json:"instId"`
-	OrdID  string `json:"ordId"`
+	InstID  string `json:"instId"`
+	OrdID   string `json:"ordId,omitempty"`
+	ClOrdID string `json:"clOrdId,omitempty"`
 }
 
 // PlaceOrder sends a POST request to place a single order on OKX.
@@ -203,11 +269,12 @@ func (c *APIClient) PlaceOrder(req *OrderRequest) (*OrderResult, error) {
 
 	okxReq := &OKXOrderRequest{
 		InstID:  req.Symbol,
-		TdMode:  "cross",
+		TdMode:  "cash",
 		Side:    sideToOKX(req.Side),
 		OrdType: orderTypeToOKX(req.OrderType),
 		Px:      req.Price.String(),
 		Sz:      req.Quantity.String(),
+		ClOrdID: req.ClientOrderID,
 	}
 
 	resp, err := c.DoRequest("POST", "/api/v5/trade/order", okxReq)
@@ -388,11 +455,12 @@ func (c *APIClient) placeBatch(reqs []*OrderRequest) ([]*OrderResult, error) {
 	for i, req := range reqs {
 		okxReqs[i] = &OKXOrderRequest{
 			InstID:  req.Symbol,
-			TdMode:  "cross",
+			TdMode:  "cash",
 			Side:    sideToOKX(req.Side),
 			OrdType: orderTypeToOKX(req.OrderType),
 			Px:      req.Price.String(),
 			Sz:      req.Quantity.String(),
+			ClOrdID: req.ClientOrderID,
 		}
 	}
 

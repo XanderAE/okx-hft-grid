@@ -155,6 +155,9 @@ func (dc *DiscordChannel) Name() string {
 }
 
 // Alerter manages alert delivery across multiple channels with retry logic.
+// The journald-first design ensures alert_raised is written to the journal
+// sink BEFORE any external delivery is attempted. External channel success
+// or failure cannot suppress or remove journal evidence.
 type Alerter struct {
 	channels      []AlertChannel
 	retries       int
@@ -174,10 +177,13 @@ func NewAlerter(channels []AlertChannel, logger *StructuredLogger) *Alerter {
 	}
 }
 
-// SendAlert sends an alert to all configured channels.
-// For each channel, retries up to 3 times with 10s interval on failure.
-// If all retries fail for a channel, logs a CRITICAL message locally.
-// Returns an error if ALL channels fail to deliver the alert.
+// SendAlert sends an alert using the journald-first flow:
+// 1. Synchronously emit sanitized "alert_raised" to stdout/journald sink
+// 2. Attempt external delivery to all configured channels (async-safe)
+// 3. Emit "alert_delivery" success/failure to journald for every channel
+//
+// No channels configured, external success, or external failure can suppress
+// the mandatory journal evidence.
 func (a *Alerter) SendAlert(alert Alert) error {
 	if alert.Timestamp.IsZero() {
 		alert.Timestamp = time.Now().UTC()
@@ -190,9 +196,23 @@ func (a *Alerter) SendAlert(alert Alert) error {
 	retryInterval := a.retryInterval
 	a.mu.Unlock()
 
+	// Step 1: MANDATORY journald-first - synchronously write alert_raised
+	// This MUST happen BEFORE any external delivery attempt.
+	if a.logger != nil {
+		a.logger.logLevel("CRITICAL", "alert_raised", map[string]string{
+			"alert_level": alert.Level.String(),
+			"alert_msg":   alert.Message,
+			"symbol":      a.extractSymbol(alert),
+		})
+	}
+
 	if len(channels) == 0 {
+		// No channels configured - journal evidence still exists (written above).
+		// Log the no-channel state and return error for callers that check.
 		if a.logger != nil {
-			a.logger.LogError("alert: no channels configured", map[string]string{
+			a.logger.LogError("alert_delivery", map[string]string{
+				"channel": "none",
+				"result":  "no_channels_configured",
 				"level":   alert.Level.String(),
 				"message": alert.Message,
 			})
@@ -205,24 +225,33 @@ func (a *Alerter) SendAlert(alert Alert) error {
 		lastErr           error
 	)
 
+	// Step 2: External delivery with bounded retry
 	for _, ch := range channels {
 		err := a.sendWithRetry(ch, alert, retries, retryInterval)
+
+		// Step 3: Record delivery outcome per channel to journald
 		if err != nil {
 			lastErr = err
-			// All retries failed for this channel - log CRITICAL locally
 			if a.logger != nil {
-				a.logger.LogError(
-					fmt.Sprintf("CRITICAL: alert delivery failed after %d retries on channel %s", retries, ch.Name()),
-					map[string]string{
-						"channel":     ch.Name(),
-						"alert_level": alert.Level.String(),
-						"alert_msg":   alert.Message,
-						"error":       err.Error(),
-					},
-				)
+				a.logger.logLevel("ERROR", "alert_delivery", map[string]string{
+					"channel":     ch.Name(),
+					"result":      "failure",
+					"alert_level": alert.Level.String(),
+					"alert_msg":   alert.Message,
+					"error":       err.Error(),
+					"retries":     fmt.Sprintf("%d", retries),
+				})
 			}
 		} else {
 			atLeastOneSuccess = true
+			if a.logger != nil {
+				a.logger.logLevel("INFO", "alert_delivery", map[string]string{
+					"channel":     ch.Name(),
+					"result":      "success",
+					"alert_level": alert.Level.String(),
+					"alert_msg":   alert.Message,
+				})
+			}
 		}
 	}
 
@@ -231,6 +260,16 @@ func (a *Alerter) SendAlert(alert Alert) error {
 	}
 
 	return nil
+}
+
+// extractSymbol safely extracts the symbol from alert extra fields.
+func (a *Alerter) extractSymbol(alert Alert) string {
+	if alert.Extra != nil {
+		if s, ok := alert.Extra["symbol"]; ok {
+			return s
+		}
+	}
+	return ""
 }
 
 // sendWithRetry attempts to send an alert through a channel with retries.

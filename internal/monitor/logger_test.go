@@ -297,9 +297,10 @@ func TestSanitizer_TradeAction(t *testing.T) {
 	if entry["order_id"] != "ord-********-abc" {
 		t.Errorf("order_id = %v, want ord-********-abc", entry["order_id"])
 	}
+	// api_key matches the sensitive key denylist, so value is [REDACTED]
 	extra := entry["extra"].(map[string]interface{})
-	if extra["api_key"] != "********" {
-		t.Errorf("extra.api_key = %v, want ********", extra["api_key"])
+	if extra["api_key"] != "[REDACTED]" {
+		t.Errorf("extra.api_key = %v, want [REDACTED] (denylist match)", extra["api_key"])
 	}
 }
 

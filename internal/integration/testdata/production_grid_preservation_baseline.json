@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "baseline_state": "UNFIXED observation-first",
+  "property": "Property 2: Preservation - Healthy Grid Behavior and Non-Bug Inputs",
+  "allowed_comparator_ignores": [
+    "new_correlation_ids",
+    "new_observability_timestamps",
+    "new_durability_records",
+    "mandatory_td_mode_cash_normalization",
+    "mandatory_instrument_metadata_normalization"
+  ],
+  "forbidden_comparator_ignores": [
+    "side",
+    "level",
+    "quantity",
+    "pnl",
+    "ownership",
+    "risk",
+    "symbol"
+  ],
+  "isolation_observation": {
+    "external_dns": 0,
+    "external_dials": 0,
+    "production_requests": 0,
+    "real_order_mutations": 0,
+    "credential_class": "synthetic-only",
+    "network_modes": ["in-memory RoundTripper", "literal-IP loopback simulator"]
+  },
+  "source_sha256": {
+    "internal/strategy/mean_reversion.go": "c0d231617c3e312aab7c1c845b33096cdc0440ecb3c19e471948ce9c5f0436fa",
+    "internal/strategy/mean_reversion_signal.go": "3cdd4183ddbc9877b852b0ec0d65c3aaee8b3605a163d8da8cf5e81cfccce3fd"
+  },
+  "observations": [
+    {
+      "id": "PRE-01",
+      "requirements": ["3.1"],
+      "generated_domain": "DOGE/WIF healthy maker BUY then SELL; fill quantity equals configured quantity; interior adjacent levels; profitable fees",
+      "baseline": "BUY -> adjacent higher POST_ONLY SELL; SELL -> adjacent lower POST_ONLY BUY; exact fill quantity; VWAP/position/PnL/counters and level occupancy updated once",
+      "comparator": "Exact symbol, side, adjacent level price, quantity, POST_ONLY, position, average entry, realized PnL and counters",
+      "ignored_fields": []
+    },
+    {
+      "id": "PRE-02",
+      "requirements": ["3.2"],
+      "generated_domain": "Bot-namespaced open DOGE order with exact decimal deviation in [0, 0.02] on either side of a fresh reference",
+      "baseline": "Ticker and pending-order reads only; zero cancel and zero replacement requests, including exactly 2%",
+      "comparator": "Exact ownership fixture, symbol and zero mutation count",
+      "ignored_fields": ["new_observability_timestamps"]
+    },
+    {
+      "id": "PRE-03",
+      "requirements": ["3.3"],
+      "generated_domain": "Healthy DOGE/WIF prices and positive USDT balances with two BUY slots per symbol",
+      "baseline": "Reserve 5%, divide remaining quote balance equally over all BUY slots, derive per-symbol quantity, retain two BUY/two SELL directions per symbol",
+      "comparator": "Exact symbol/side/POST_ONLY and equivalent per-symbol quantity plus BUY quote-risk total after any mandatory lot normalization",
+      "ignored_fields": ["mandatory_td_mode_cash_normalization", "mandatory_instrument_metadata_normalization"]
+    },
+    {
+      "id": "PRE-04",
+      "requirements": ["3.4"],
+      "generated_domain": "Minimum/interior/maximum volatility classes and bidirectional one-step Grid Drift with non-zero position/PnL",
+      "baseline": "Symmetric old 3%-8% half-width clamp with monotonic volatility class; drift shifts range without changing Position, AvgEntryPrice, RealizedPnL, TotalBuys or TotalSells",
+      "comparator": "Normalize only approved old/new clamp values by volatility class; exact direction, symmetry, range width and GridState/PnL",
+      "ignored_fields": ["new_observability_timestamps"]
+    },
+    {
+      "id": "PRE-05",
+      "requirements": ["3.5"],
+      "generated_domain": "One pg-v1 bot-namespaced historical order and no unowned orders",
+      "baseline": "Exactly the owned order is cancelled before the first new-grid placement",
+      "comparator": "Exact ownership identity, symbol, cancel count and cleanup-before-place ordering",
+      "ignored_fields": ["new_correlation_ids"]
+    },
+    {
+      "id": "PRE-06",
+      "requirements": ["3.6"],
+      "generated_domain": "Fresh valid DOGE/WIF ticker decimals, sizes, volume, timestamp offsets within four seconds and arbitrary increasing sequence; paired six-second stale replay",
+      "baseline": "Exact parse and synchronous dispatch; six-second-old ticker rejected with symbol-scoped DATA_INVALID evidence",
+      "comparator": "Exact symbol, all price/size/volume decimals, sequence and dispatch count; stale remains rejected",
+      "ignored_fields": []
+    },
+    {
+      "id": "PRE-07",
+      "requirements": ["3.7"],
+      "generated_domain": "Ascending grid levels around an exact current level, positive quantities, profitable BUY fills and SELL counter-BUY risk boundary",
+      "baseline": "Below=current BUY, above=current SELL, current omitted, all POST_ONLY; profitable adjacent counter allowed; position-limit excess rejected and equality allowed",
+      "comparator": "Exact symbol, side, level price, quantity, POST_ONLY, profitability result and risk decision",
+      "ignored_fields": ["mandatory_td_mode_cash_normalization", "mandatory_instrument_metadata_normalization"]
+    },
+    {
+      "id": "PRE-08",
+      "requirements": ["3.8"],
+      "generated_domain": "DOGE/WIF orders, positions and grid strategy JSON with exact decimal quantity, average entry, unrealized/realized PnL in a t.TempDir SQLite database",
+      "baseline": "Logical fields survive close/reopen round trip exactly for both symbols",
+      "comparator": "Exact order identity/status/side/symbol/price/quantity, position/average/PnL and strategy state; additional durability rows do not participate",
+      "ignored_fields": ["new_durability_records"]
+    },
+    {
+      "id": "PRE-09",
+      "requirements": ["3.9"],
+      "generated_domain": "Healthy DOGE BUY fill interleaved before or after a simulator-local WIF counter rejection",
+      "baseline": "DOGE emits the same adjacent POST_ONLY SELL with exact symbol, price and quantity as DOGE-only execution",
+      "comparator": "Exact healthy-peer output; no WIF bug-condition behavior is accepted as baseline",
+      "ignored_fields": ["mandatory_td_mode_cash_normalization", "new_correlation_ids"]
+    },
+    {
+      "id": "PRE-10",
+      "requirements": ["3.10"],
+      "generated_domain": "DOGE/WIF preservation profile with an explicitly empty mean_reversion_configs sequence plus both mean-reversion production source files",
+      "baseline": "No mean-reversion config is loaded; source SHA-256 values remain unchanged",
+      "comparator": "Exact empty activation set and exact production source hashes",
+      "ignored_fields": []
+    },
+    {
+      "id": "PRE-11",
+      "requirements": ["3.11"],
+      "generated_domain": "Synthetic 32+ character credential-shaped values through info/warn/error/trade/local-alert paths and credentials loaded only from controlled environment variables",
+      "baseline": "No raw synthetic secret appears; fixed mask appears; symbol/BUY/quantity remain observable; controlled values load unchanged",
+      "comparator": "Exact absence of raw value and preservation of non-sensitive trading fields",
+      "ignored_fields": ["new_observability_timestamps"]
+    },
+    {
+      "id": "PRE-12",
+      "requirements": ["3.12"],
+      "generated_domain": "Read-only API entry points over an in-memory transport and static audit of every Property 2 test/fixture",
+      "baseline": "Zero external DNS, dial, production request, real credential use, real order mutation or approval action",
+      "comparator": "All production-effect counters remain exactly zero and every endpoint remains in-memory or literal loopback",
+      "ignored_fields": []
+    }
+  ]
+}

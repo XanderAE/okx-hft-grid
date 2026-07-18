@@ -7,13 +7,14 @@ import (
 
 // OrderRequest represents a request to place an order.
 type OrderRequest struct {
-	Symbol     string            // Trading pair
-	Side       models.Side       // BUY or SELL
-	OrderType  models.OrderType  // LIMIT, MARKET, POST_ONLY
-	Price      decimal.Decimal   // Order price
-	Quantity   decimal.Decimal   // Order quantity
-	StrategyID string            // Associated strategy ID
-	GridLevel  int               // Grid level index (-1 if not grid)
+	Symbol        string            // Trading pair
+	Side          models.Side       // BUY or SELL
+	OrderType     models.OrderType  // LIMIT, MARKET, POST_ONLY
+	Price         decimal.Decimal   // Order price
+	Quantity      decimal.Decimal   // Order quantity
+	StrategyID    string            // Associated strategy ID
+	GridLevel     int               // Grid level index (-1 if not grid)
+	ClientOrderID string            // Deterministic client order ID (caller-supplied)
 }
 
 // OrderResult represents the result of placing an order.

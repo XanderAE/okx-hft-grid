@@ -22,10 +22,13 @@ const (
 	PrivateWebSocketURL = "wss://ws.okx.com:8443/ws/v5/private"
 
 	// PrivateHeartbeatInterval is how often we send a ping to the private WS server.
-	PrivateHeartbeatInterval = 25 * time.Second
+	// Requirements 2.2: 20-second heartbeat interval.
+	PrivateHeartbeatInterval = 20 * time.Second
 
-	// PrivateHeartbeatTimeout is the maximum time to wait for a pong response on private WS.
-	PrivateHeartbeatTimeout = 30 * time.Second
+	// PrivateHeartbeatTimeout is the maximum time since last verified liveness
+	// before marking the connection as unhealthy.
+	// Requirements 2.2: max 45 seconds from last verified liveness to unhealthy.
+	PrivateHeartbeatTimeout = 45 * time.Second
 
 	// PrivateConnectTimeout is the maximum time to wait for a private WS connection.
 	PrivateConnectTimeout = 10 * time.Second

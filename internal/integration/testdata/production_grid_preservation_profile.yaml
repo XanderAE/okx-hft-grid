@@ -1,0 +1,28 @@
+symbols:
+  - DOGE-USDT
+  - WIF-USDT
+
+grid_configs:
+  - symbol: DOGE-USDT
+    lower_price: "0.096"
+    upper_price: "0.104"
+    grid_count: 4
+    grid_type: 0
+    order_size: "100"
+    max_position: "10000"
+    fee_rate: "0.001"
+  - symbol: WIF-USDT
+    lower_price: "1.92"
+    upper_price: "2.08"
+    grid_count: 4
+    grid_type: 0
+    order_size: "10"
+    max_position: "1000"
+    fee_rate: "0.001"
+
+mean_reversion_configs: []
+websocket_url: "ws://127.0.0.1/private-preservation-fixture"
+rest_url: "http://127.0.0.1"
+reconcile_interval_sec: 30
+persistence_path: "testdata/isolated-preservation-state.db"
+metrics_port: 0

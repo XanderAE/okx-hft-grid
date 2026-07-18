@@ -4,9 +4,45 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
+
+// sensitiveKeyDenylist contains field names that must never appear in log output.
+// Any key (case-insensitive) matching these patterns is replaced with a redacted marker.
+var sensitiveKeyDenylist = []string{
+	"authorization",
+	"api_key",
+	"api-key",
+	"apikey",
+	"secret_key",
+	"secret-key",
+	"secretkey",
+	"secret",
+	"passphrase",
+	"password",
+	"signature",
+	"access_key",
+	"access-key",
+	"accesskey",
+	"env_dump",
+	"env-dump",
+	"envdump",
+}
+
+// isSensitiveKey checks if a key name matches the denylist (case-insensitive).
+func isSensitiveKey(key string) bool {
+	lower := strings.ToLower(key)
+	for _, denied := range sensitiveKeyDenylist {
+		if lower == denied || strings.Contains(lower, denied) {
+			return true
+		}
+	}
+	return false
+}
+
+const redactedKeyValue = "[REDACTED]"
 
 // TradeAction represents a single trading action log entry with all required fields.
 type TradeAction struct {
@@ -68,6 +104,7 @@ func (l *StructuredLogger) SetSanitizer(fn func(string) string) {
 // LogTradeAction outputs a structured JSON trade action log entry.
 // The entry includes timestamp with millisecond precision, action type, instrument,
 // quantity, price, order ID, and result as required by Requirement 11.4.
+// Keys matching the sensitive denylist have their values replaced with [REDACTED].
 func (l *StructuredLogger) LogTradeAction(action TradeAction) {
 	ts := action.Timestamp
 	if ts.IsZero() {
@@ -80,7 +117,12 @@ func (l *StructuredLogger) LogTradeAction(action TradeAction) {
 
 	extra := make(map[string]string, len(action.Extra))
 	for k, v := range action.Extra {
-		extra[sanitize(k)] = sanitize(v)
+		sanitizedKey := sanitize(k)
+		if isSensitiveKey(k) {
+			extra[sanitizedKey] = redactedKeyValue
+		} else {
+			extra[sanitizedKey] = sanitize(v)
+		}
 	}
 
 	entry := logEntry{
@@ -116,6 +158,7 @@ func (l *StructuredLogger) LogError(msg string, fields map[string]string) {
 }
 
 // logLevel handles generic log entries at the specified level.
+// Keys matching the sensitive denylist have their values replaced with [REDACTED].
 func (l *StructuredLogger) logLevel(level, msg string, fields map[string]string) {
 	l.mu.Lock()
 	sanitize := l.sanitizer
@@ -123,7 +166,12 @@ func (l *StructuredLogger) logLevel(level, msg string, fields map[string]string)
 
 	extra := make(map[string]string, len(fields))
 	for k, v := range fields {
-		extra[sanitize(k)] = sanitize(v)
+		sanitizedKey := sanitize(k)
+		if isSensitiveKey(k) {
+			extra[sanitizedKey] = redactedKeyValue
+		} else {
+			extra[sanitizedKey] = sanitize(v)
+		}
 	}
 
 	entry := logEntry{

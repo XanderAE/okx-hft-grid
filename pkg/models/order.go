@@ -89,6 +89,7 @@ func (t OrderType) String() string {
 // Order represents a trading order with full lifecycle information.
 type Order struct {
 	OrderId         string          `json:"orderId"`         // 本地订单ID
+	ClientOrderID   string          `json:"clientOrderId"`   // 确定性的客户端订单ID
 	ExchangeOrderId string          `json:"exchangeOrderId"` // 交易所订单ID
 	Symbol          string          `json:"symbol"`          // 交易对
 	Side            Side            `json:"side"`            // 买/卖方向

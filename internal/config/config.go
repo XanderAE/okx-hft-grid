@@ -1,7 +1,9 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -33,19 +35,32 @@ func (e *ValidationError) Add(msg string) {
 
 // SystemConfig holds the complete system configuration.
 type SystemConfig struct {
-	Symbols              []string                      `yaml:"symbols"`
-	GridConfigs          []models.GridConfig           `yaml:"grid_configs"`
-	MeanReversionConfigs []models.MeanReversionConfig  `yaml:"mean_reversion_configs"`
-	RiskLimits           models.RiskLimits             `yaml:"risk_limits"`
-	ExchangeMinOrderSize map[string]decimal.Decimal    `yaml:"exchange_min_order_size"`
-	WebSocketURL         string                        `yaml:"websocket_url"`
-	RESTURL              string                        `yaml:"rest_url"`
-	ReconcileIntervalSec int                           `yaml:"reconcile_interval_sec"`
-	PersistencePath      string                        `yaml:"persistence_path"`
-	MetricsPort          int                           `yaml:"metrics_port"`
+	Symbols              []string                     `yaml:"symbols"`
+	GridConfigs          []models.GridConfig          `yaml:"grid_configs"`
+	MeanReversionConfigs []models.MeanReversionConfig `yaml:"mean_reversion_configs"`
+	RiskLimits           models.RiskLimits            `yaml:"risk_limits"`
+	ExchangeMinOrderSize map[string]decimal.Decimal   `yaml:"exchange_min_order_size"`
+	WebSocketURL         string                       `yaml:"websocket_url"`
+	RESTURL              string                       `yaml:"rest_url"`
+	ReconcileIntervalSec int                          `yaml:"reconcile_interval_sec"`
+	PersistencePath      string                       `yaml:"persistence_path"`
+	MetricsPort          int                          `yaml:"metrics_port"`
+
+	Deployment      DeploymentConfig       `yaml:"deployment"`
+	Execution       ExecutionConfig        `yaml:"execution"`
+	PrivateWS       PrivateWSConfig        `yaml:"private_ws"`
+	Reconciliation  ReconciliationConfig   `yaml:"reconciliation"`
+	Rebalancer      RebalancerConfig       `yaml:"rebalancer"`
+	Ticker          TickerConfig           `yaml:"ticker"`
+	AdaptiveRange   AdaptiveRangeConfig    `yaml:"adaptive_range"`
+	ExecutionMode   ExecutionMode          `yaml:"execution_mode"`
+	TradingEnabled  bool                   `yaml:"trading_enabled"`
+	ProductionGates ProductionGateEvidence `yaml:"production_gates"`
 }
 
-// LoadConfig reads a YAML configuration file and returns the parsed SystemConfig.
+// LoadConfig reads exactly one YAML document using strict known-field decoding.
+// Production profiles are validated before being returned so callers cannot
+// construct network components from an invalid production configuration.
 func LoadConfig(path string) (*SystemConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -53,11 +68,43 @@ func LoadConfig(path string) (*SystemConfig, error) {
 	}
 
 	var cfg SystemConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("failed to parse config file %s: multiple YAML documents are not allowed", path)
+		}
+		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+
+	if cfg.ExecutionMode == ExecutionModeProduction {
+		if err := ValidateProductionConfig(&cfg); err != nil {
+			return nil, fmt.Errorf("invalid production config: %w", err)
+		}
+	}
+
 	return &cfg, nil
+}
+
+// LoadProductionConfig loads a strictly decoded profile and requires all
+// production invariants to be valid.
+func LoadProductionConfig(path string) (*SystemConfig, error) {
+	cfg, err := LoadConfig(path)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.ExecutionMode != ExecutionModeProduction {
+		return nil, fmt.Errorf("invalid production config: execution_mode must be %q", ExecutionModeProduction)
+	}
+	if err := ValidateProductionConfig(cfg); err != nil {
+		return nil, fmt.Errorf("invalid production config: %w", err)
+	}
+	return cfg, nil
 }
 
 // ValidateGridConfig validates a GridConfig and returns a detailed error if invalid.

@@ -1,33 +1,55 @@
-# OKX HFT Grid Bot - Example Configuration
-# Copy this file to config.yaml and adjust values for your deployment.
-#
-# NOTE: upper_price and lower_price are OMITTED from grid_configs because
-# they will be calculated adaptively at startup based on 7-day historical data.
-# If you want to override the adaptive range, set them explicitly.
+# OKX HFT Grid Bot - version-controlled Singapore production profile.
+# This profile starts reconcile-only. Production trading requires a separately
+# reviewed config revision containing all non-secret gate evidence identifiers.
+# Adaptive upper/lower prices remain runtime calculations; the approved range
+# below is one symmetric half-width on each side of the reference price.
+
+deployment:
+  location: "aws-ap-southeast-1-singapore"
+
+execution_mode: "production"
+trading_enabled: false
+
+execution:
+  td_mode: "cash"
+
+private_ws:
+  heartbeat_interval: 20s
+  liveness_timeout: 45s
+  reconnect_start_deadline: 5s
+
+reconciliation:
+  interval: 30s
+
+rebalancer:
+  interval: 30s
+  max_jitter: 5s
+
+ticker:
+  max_age: 5s
+
+adaptive_range:
+  min_half_width: "0.015"
+  max_half_width: "0.04"
+  symmetric: true
+  width_mode: "per_side_half_width"
+
+production_gates:
+  credential_rotation: ""
+  least_privilege: ""
+  singapore_ip_allowlist: ""
+  human_trading_approval: ""
 
 symbols:
   - "DOGE-USDT"
-  - "PEPE-USDT"
   - "WIF-USDT"
 
 grid_configs:
   - symbol: "DOGE-USDT"
     grid_count: 10
-    grid_type: 0  # 0 = ARITHMETIC, 1 = GEOMETRIC
+    grid_type: 0
     order_size: "100"
     max_position: "3000"
-    fee_rate: "0.001"
-    drift:
-      enabled: true
-      drift_threshold: "0.10"
-      drift_step: 2
-      cooldown_period: 30s
-      max_drifts: 100
-  - symbol: "PEPE-USDT"
-    grid_count: 10
-    grid_type: 0
-    order_size: "100000"
-    max_position: "5000000"
     fee_rate: "0.001"
     drift:
       enabled: true
@@ -48,17 +70,9 @@ grid_configs:
       cooldown_period: 30s
       max_drifts: 100
 
-mean_reversion_configs:
-  - symbol: "PEPE-USDT"
-    lookback_period: 60
-    entry_threshold: "2.0"
-    exit_threshold: "0.5"
-    ma_type: 1
-    order_size: "500000"
-    max_position: "5000000"
-    cooldown_ms: 5000
+# Mean reversion is deliberately excluded from this production profile.
+mean_reversion_configs: []
 
-# Risk management
 risk_limits:
   max_position_per_symbol: "10000000"
   max_total_position: "50000000"
@@ -69,11 +83,11 @@ risk_limits:
   min_spread_bps: 5
   emergency_stop_loss: "1000.0"
 
-# Monitoring
 metrics_port: 9090
-
-# Connection
 websocket_url: "wss://ws.okx.com:8443/ws/v5/public"
 rest_url: "https://www.okx.com"
-reconcile_interval_sec: 60
-persistence_path: "data/hft_state.db"
+
+# Transitional composition field consumed by the current command wiring. It is
+# constrained to the same approved 30-second value by startup validation.
+reconcile_interval_sec: 30
+persistence_path: "/var/lib/okx-hft-grid/hft_state.db"

@@ -643,6 +643,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199802910
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348594276
       }
     ],
     "7.3 实现网格成交处理": [
@@ -655,6 +660,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199803376
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348605522
       }
     ],
     "7.4 编写网格价位单调性属性测试": [
@@ -667,6 +677,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199803978
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348606211
       }
     ],
     "7.5 编写等差网格间距属性测试": [
@@ -679,6 +694,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199804516
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348606912
       }
     ],
     "7.6 编写等比网格比率属性测试": [
@@ -691,6 +711,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199804976
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348608096
       }
     ],
     "7.7 编写网格订单方向属性测试": [
@@ -703,6 +728,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199805530
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348608893
       }
     ],
     "7.8 编写网格互斥属性测试": [
@@ -715,6 +745,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199806059
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348615242
       }
     ],
     "7.9 编写网格成交 counter-order 属性测试": [
@@ -727,6 +762,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199806584
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348616087
       }
     ],
     "7.10 编写网格利润保证属性测试": [
@@ -739,6 +779,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199806997
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348617029
       }
     ],
     "7.11 编写网格持仓上限属性测试": [
@@ -751,6 +796,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199807503
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348619242
       }
     ],
     "7.12 编写网格已实现盈亏属性测试": [
@@ -763,6 +813,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199807902
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348619119
       }
     ],
     "8.1 实现移动平均计算": [
@@ -792,6 +847,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199808858
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348619439
       }
     ],
     "8.3 编写均值回归信号方向属性测试": [
@@ -804,6 +864,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199809297
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348620300
       }
     ],
     "8.4 编写 EMA 有界性属性测试": [
@@ -816,6 +881,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199809845
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348621358
       }
     ],
     "8.5 编写信号冷却期属性测试": [
@@ -828,6 +898,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199810360
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348623401
       }
     ],
     "9.1 实现订单状态机": [
@@ -857,6 +932,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199811497
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348623490
       }
     ],
     "9.3 实现批量下单与对账": [
@@ -869,6 +949,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199811986
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348623560
       }
     ],
     "9.4 编写订单状态机属性测试": [
@@ -917,6 +1002,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199813928
+      },
+      {
+        "executionId": "563651d3-e470-4f6f-b523-d91a4753345a",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350045474
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351091232
       }
     ],
     "10. Checkpoint - 核心交易逻辑验证": [
@@ -941,6 +1036,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199814775
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348624458
       }
     ],
     "11.2 实现紧急停止机制": [
@@ -953,6 +1053,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199815196
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348625075
       }
     ],
     "11.3 实现极端行情检测": [
@@ -965,6 +1070,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199815765
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348625725
       }
     ],
     "11.4 编写风控持仓限额属性测试": [
@@ -977,6 +1087,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199816265
+      },
+      {
+        "executionId": "563651d3-e470-4f6f-b523-d91a4753345a",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350046178
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351092113
       }
     ],
     "11.5 编写日亏损限额属性测试": [
@@ -989,6 +1109,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199816729
+      },
+      {
+        "executionId": "563651d3-e470-4f6f-b523-d91a4753345a",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350046962
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351093048
       }
     ],
     "11.6 编写下单频率限制属性测试": [
@@ -1001,6 +1131,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199817141
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350416068
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351093907
       }
     ],
     "11.7 编写紧急停止属性测试": [
@@ -1013,6 +1153,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199817557
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350416831
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351094680
       }
     ],
     "11.8 编写挂单数和价差限制属性测试": [
@@ -1025,6 +1175,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199818041
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350417594
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351095717
       }
     ],
     "11.9 编写极端行情检测属性测试": [
@@ -1037,6 +1197,16 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199818513
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784350418380
+      },
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351096638
       }
     ],
     "12.1 实现 SQLite 状态持久化": [
@@ -1049,6 +1219,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199818911
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348626499
       }
     ],
     "12.2 实现环形缓冲区时序数据存储": [
@@ -1061,6 +1236,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199819412
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348627383
       }
     ],
     "12.3 编写状态持久化 round-trip 属性测试": [
@@ -1097,6 +1277,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199820879
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348628243
       }
     ],
     "13.2 实现告警通知系统": [
@@ -1109,6 +1294,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199821343
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348628910
       }
     ],
     "13.3 实现结构化日志系统": [
@@ -1121,6 +1311,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199821853
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348629596
       }
     ],
     "13.4 编写交易日志完整性属性测试": [
@@ -1157,6 +1352,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199823381
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348630408
       }
     ],
     "15.2 实现故障恢复与重启流程": [
@@ -1169,6 +1369,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199823877
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348632362
       }
     ],
     "15.3 实现 systemd 服务配置": [
@@ -1181,6 +1386,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199824496
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348632512
       }
     ],
     "15.4 集成端到端交易循环": [
@@ -1193,6 +1403,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199825112
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348632839
       }
     ],
     "15.5 编写端到端集成测试": [
@@ -1205,6 +1420,11 @@
         "executionId": "0a3c3fb8-eb98-4b6a-9067-feafe59e13c5",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784199825594
+      },
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348633769
       }
     ],
     "16. Final checkpoint - 全系统验证": [
@@ -1252,6 +1472,20 @@
         "executionId": "5c4d6858-0577-406f-878c-1635e353e3cc",
         "chatSessionId": "sess_12b596d0-8ca7-4949-ae40-ade4758cbdec",
         "timestamp": 1784205349770
+      }
+    ],
+    "15. 策略引擎与组件集成": [
+      {
+        "executionId": "7d590265-7f0d-4622-9bdf-cea9aef6ef0d",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784348633902
+      }
+    ],
+    "11. 风控管理器": [
+      {
+        "executionId": "7e0a8bee-e13f-4e10-a9a6-ae624f2c8b33",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784351096699
       }
     ]
   }

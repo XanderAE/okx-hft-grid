@@ -1,0 +1,11 @@
+[Unit]
+Description=OKX HFT Grid Failure Alert (journald only) for %i
+
+[Service]
+Type=oneshot
+ExecStart=/bin/echo "CRITICAL: okx-hft-grid restart limit exceeded for %i at %H"
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=okx-hft-grid-failure
+# This unit must NOT receive trading credentials.
+# It exists solely to produce a journald event when restart limits are hit.

@@ -34,18 +34,21 @@ type MarketEvent struct {
 
 // FillEvent represents a trade fill event.
 type FillEvent struct {
-	OrderID         string          // Local order ID
-	ExchangeOrderID string          // Exchange-assigned order ID
-	Symbol          string          // Trading pair
-	Side            Side            // BUY or SELL
-	Price           decimal.Decimal // Fill price
-	Quantity        decimal.Decimal // Fill quantity
-	Fee             decimal.Decimal // Trading fee
-	FeeCurrency     string          // Fee currency
-	Timestamp       time.Time       // Fill timestamp
-	StrategyID      string          // Associated strategy ID
-	GridLevel       int             // Grid level index (-1 if not grid)
-	IsMaker         bool            // Whether this was a maker fill
+	OrderID           string          // Local order ID
+	ClientOrderID     string          // Stable bot-assigned client order ID
+	ExchangeOrderID   string          // Exchange-assigned order ID
+	ExchangeFillID    string          // Exchange-assigned stable fill ID
+	Symbol            string          // Trading pair
+	Side              Side            // BUY or SELL
+	Price             decimal.Decimal // Fill price
+	Quantity          decimal.Decimal // Incremental fill quantity
+	CumulativeQuantity decimal.Decimal // Exchange-reported cumulative filled quantity
+	Fee               decimal.Decimal // Trading fee
+	FeeCurrency       string          // Fee currency
+	Timestamp         time.Time       // Fill timestamp
+	StrategyID        string          // Associated strategy ID
+	GridLevel         int             // Grid level index (-1 if not grid)
+	IsMaker           bool            // Whether this was a maker fill
 }
 
 // OrderUpdateEvent represents an order status update from the exchange.

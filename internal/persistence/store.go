@@ -34,36 +34,47 @@ type SQLiteStore struct {
 	closed     bool
 }
 
-// NewSQLiteStore opens a SQLite database at dbPath with WAL mode enabled,
-// creates the required tables, and returns a ready-to-use store.
-// Returns ErrCorrupted if the database cannot be opened or initialized.
+// NewSQLiteStore opens a SQLite database with the durability contract used by
+// the production recovery path: WAL, synchronous=FULL, foreign keys, and
+// BEGIN IMMEDIATE for every database/sql transaction. Schema changes are
+// additive so databases created by older releases remain readable.
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL")
+	dsn := dbPath + "?_journal_mode=WAL&_busy_timeout=5000&_synchronous=FULL&_foreign_keys=on&_txlock=immediate"
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCorrupted, err)
 	}
+	db.SetMaxOpenConns(4)
+	db.SetMaxIdleConns(4)
 
-	// Verify connection
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("%w: %v", ErrCorrupted, err)
 	}
 
-	// Enable WAL mode explicitly
-	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("%w: failed to enable WAL mode: %v", ErrCorrupted, err)
+	pragmas := []string{
+		"PRAGMA journal_mode=WAL",
+		"PRAGMA synchronous=FULL",
+		"PRAGMA foreign_keys=ON",
+		"PRAGMA busy_timeout=5000",
+	}
+	for _, pragma := range pragmas {
+		if _, err := db.Exec(pragma); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("%w: failed to apply %s: %v", ErrCorrupted, pragma, err)
+		}
 	}
 
-	// Create tables
 	if err := createTables(db); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%w: failed to create tables: %v", ErrCorrupted, err)
+		return nil, fmt.Errorf("%w: failed to create legacy-compatible tables: %v", ErrCorrupted, err)
+	}
+	if err := migrateDurableSchema(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("%w: failed to migrate durable schema: %v", ErrCorrupted, err)
 	}
 
-	return &SQLiteStore{
-		db: db,
-	}, nil
+	return &SQLiteStore{db: db}, nil
 }
 
 func createTables(db *sql.DB) error {
