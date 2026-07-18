@@ -72,8 +72,8 @@ func (rb *ringBuffer) queryByTimeRange(startTime, endTime int64) []TimeSeriesRec
 // TimeSeriesBuffer manages per-symbol ring buffers for time-series data storage.
 // It is thread-safe for concurrent access.
 type TimeSeriesBuffer struct {
-	mu               sync.RWMutex
-	buffers          map[string]*ringBuffer
+	mu                sync.RWMutex
+	buffers           map[string]*ringBuffer
 	capacityPerSymbol int
 }
 
@@ -84,7 +84,7 @@ func NewTimeSeriesBuffer(capacityPerSymbol int) *TimeSeriesBuffer {
 		capacityPerSymbol = DefaultCapacityPerSymbol
 	}
 	return &TimeSeriesBuffer{
-		buffers:          make(map[string]*ringBuffer),
+		buffers:           make(map[string]*ringBuffer),
 		capacityPerSymbol: capacityPerSymbol,
 	}
 }

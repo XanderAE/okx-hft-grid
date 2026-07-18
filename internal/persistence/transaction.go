@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrCriticalCommitUncertain = errors.New("persistence: critical commit outcome is uncertain")
+	ErrCriticalCommitUncertain  = errors.New("persistence: critical commit outcome is uncertain")
 	ErrSharedPersistenceFailure = errors.New("persistence: shared dependency failure")
 	ErrNoOutboxWork             = errors.New("persistence: no outbox work is ready")
 	ErrUnownedFill              = errors.New("persistence: fill does not belong to bot lineage")

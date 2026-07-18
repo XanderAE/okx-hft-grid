@@ -169,7 +169,7 @@ func TestProperty_CredentialValidation_AllPermutationsCovered(t *testing.T) {
 		missingMask := rapid.IntRange(1, 7).Draw(t, "missingMask")
 
 		// For each missing credential, randomly choose between unset and empty
-		apiKeyMode := rapid.IntRange(0, 1).Draw(t, "apiKeyMode")     // 0=unset, 1=empty
+		apiKeyMode := rapid.IntRange(0, 1).Draw(t, "apiKeyMode") // 0=unset, 1=empty
 		secretKeyMode := rapid.IntRange(0, 1).Draw(t, "secretKeyMode")
 		passphraseMode := rapid.IntRange(0, 1).Draw(t, "passphraseMode")
 

@@ -112,10 +112,10 @@ func (m *mockRebalancerGateway) GetInstrumentRules(_ context.Context, _ string) 
 
 // mockRebalancerGate tracks authorization and safe-stop calls.
 type mockRebalancerGate struct {
-	mu             sync.Mutex
-	authorized     bool
-	blockReason    string
-	safeStopCalls  []safeStopCall
+	mu            sync.Mutex
+	authorized    bool
+	blockReason   string
+	safeStopCalls []safeStopCall
 }
 
 type safeStopCall struct {
@@ -151,9 +151,9 @@ func (g *mockRebalancerGate) SafeStopCount() int {
 
 // mockBotOrderStore tracks ownership checks.
 type mockBotOrderStore struct {
-	mu       sync.Mutex
-	owned    map[string]bool // exchange order ID -> owned
-	err      error
+	mu    sync.Mutex
+	owned map[string]bool // exchange order ID -> owned
+	err   error
 }
 
 func newMockBotOrderStore() *mockBotOrderStore {
@@ -225,10 +225,10 @@ func buildTestRebalancer(t *testing.T) (*Rebalancer, *mockRebalancerGateway, *mo
 	outcomeStore := &mockOutcomeStore{}
 	fillObs := &mockRebalancerFillObserver{}
 	rules := models.InstrumentRules{
-		Symbol:   "DOGE-USDT",
-		TickSize: decimal.NewFromFloat(0.00001),
-		LotSize:  decimal.NewFromInt(1),
-		MinSize:  decimal.NewFromInt(10),
+		Symbol:    "DOGE-USDT",
+		TickSize:  decimal.NewFromFloat(0.00001),
+		LotSize:   decimal.NewFromInt(1),
+		MinSize:   decimal.NewFromInt(10),
 		FetchedAt: now,
 		ExpiresAt: now.Add(15 * time.Minute),
 	}

@@ -9,10 +9,10 @@ import (
 
 // mockExtremeMarketCallback records calls for testing.
 type mockExtremeMarketCallback struct {
-	cancelGridCalled      int
-	pauseMeanRevCalled    int
-	sendAlertCalled       int
-	lastAlertReason       string
+	cancelGridCalled   int
+	pauseMeanRevCalled int
+	sendAlertCalled    int
+	lastAlertReason    string
 }
 
 func (m *mockExtremeMarketCallback) CancelGridOrders() {

@@ -32,9 +32,9 @@ type Timer interface {
 // RealClock uses the standard time package.
 type RealClock struct{}
 
-func (RealClock) Now() time.Time                         { return time.Now() }
-func (RealClock) Since(t time.Time) time.Duration        { return time.Since(t) }
-func (RealClock) NewTicker(d time.Duration) Ticker       { return &realTicker{time.NewTicker(d)} }
+func (RealClock) Now() time.Time                   { return time.Now() }
+func (RealClock) Since(t time.Time) time.Duration  { return time.Since(t) }
+func (RealClock) NewTicker(d time.Duration) Ticker { return &realTicker{time.NewTicker(d)} }
 func (RealClock) AfterFunc(d time.Duration, f func()) Timer {
 	return &realTimer{time.AfterFunc(d, f)}
 }
@@ -42,11 +42,11 @@ func (RealClock) AfterFunc(d time.Duration, f func()) Timer {
 type realTicker struct{ t *time.Ticker }
 
 func (r *realTicker) C() <-chan time.Time { return r.t.C }
-func (r *realTicker) Stop()              { r.t.Stop() }
+func (r *realTicker) Stop()               { r.t.Stop() }
 
 type realTimer struct{ t *time.Timer }
 
-func (r *realTimer) Stop() bool              { return r.t.Stop() }
+func (r *realTimer) Stop() bool                 { return r.t.Stop() }
 func (r *realTimer) Reset(d time.Duration) bool { return r.t.Reset(d) }
 
 // Dialer abstracts WebSocket connection establishment for testing.
@@ -139,9 +139,9 @@ type StateChangeEvent struct {
 
 // SubscriptionSpec identifies a required subscription.
 type SubscriptionSpec struct {
-	Channel    string
-	InstType   string
-	InstID     string // optional, empty means all for that instType
+	Channel  string
+	InstType string
+	InstID   string // optional, empty means all for that instType
 }
 
 // ReconciliationCallback is triggered on startup, reconnect, or gap.
@@ -193,25 +193,25 @@ type PrivateWSStateMachine struct {
 	clock  Clock
 	dialer Dialer
 
-	mu              sync.RWMutex
-	state           PrivateWSState
-	epoch           uint64
-	lastLiveness    time.Time
-	reconnectCount  int
-	conn            WSConn
-	confirmedSubs   map[string]bool // key: "channel:instType:instID"
-	unhealthyAt     time.Time
+	mu             sync.RWMutex
+	state          PrivateWSState
+	epoch          uint64
+	lastLiveness   time.Time
+	reconnectCount int
+	conn           WSConn
+	confirmedSubs  map[string]bool // key: "channel:instType:instID"
+	unhealthyAt    time.Time
 
 	// Callbacks
-	onStateChange  StateChangeCallback
-	onReconcile    ReconciliationCallback
-	onRiskGate     RiskGateCallback
-	onFill         FillCallback
+	onStateChange StateChangeCallback
+	onReconcile   ReconciliationCallback
+	onRiskGate    RiskGateCallback
+	onFill        FillCallback
 
 	// Control
-	cancel    context.CancelFunc
-	done      chan struct{}
-	wg        sync.WaitGroup
+	cancel context.CancelFunc
+	done   chan struct{}
+	wg     sync.WaitGroup
 }
 
 // NewPrivateWSStateMachine constructs the state machine without starting it.

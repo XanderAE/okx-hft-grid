@@ -14,30 +14,30 @@ import (
 type ReconcileReason string
 
 const (
-	ReconcileReasonStartup       ReconcileReason = "startup"
-	ReconcileReasonReconnect     ReconcileReason = "reconnect"
-	ReconcileReasonGap           ReconcileReason = "gap"
+	ReconcileReasonStartup         ReconcileReason = "startup"
+	ReconcileReasonReconnect       ReconcileReason = "reconnect"
+	ReconcileReasonGap             ReconcileReason = "gap"
 	ReconcileReasonUncertainOutbox ReconcileReason = "uncertain-outbox"
-	ReconcileReasonPeriodic      ReconcileReason = "periodic"
-	ReconcileReasonManual        ReconcileReason = "manual"
+	ReconcileReasonPeriodic        ReconcileReason = "periodic"
+	ReconcileReasonManual          ReconcileReason = "manual"
 )
 
 // ReconcileResult summarizes one completed reconciliation cycle.
 type ReconcileResult struct {
-	Symbol          string
-	Reason          ReconcileReason
-	StartedAt       time.Time
-	CompletedAt     time.Time
-	PagesQueried    int
-	FillsChecked    int
+	Symbol           string
+	Reason           ReconcileReason
+	StartedAt        time.Time
+	CompletedAt      time.Time
+	PagesQueried     int
+	FillsChecked     int
 	FillsCompensated int
-	DuplicatesFound int
-	OrdersChecked   int
-	OrderDiffs      int
-	WatermarkBefore *models.ReconciliationWatermark
-	WatermarkAfter  *models.ReconciliationWatermark
-	Err             error
-	Overrun         bool
+	DuplicatesFound  int
+	OrdersChecked    int
+	OrderDiffs       int
+	WatermarkBefore  *models.ReconciliationWatermark
+	WatermarkAfter   *models.ReconciliationWatermark
+	Err              error
+	Overrun          bool
 }
 
 // ReconcileCycleCallback is invoked after each cycle completes for observability.
@@ -98,11 +98,11 @@ type ReconciliationCoordinator struct {
 	config   ReconciliationCoordinatorConfig
 	callback ReconcileCycleCallback
 
-	mu       sync.Mutex
-	symbols  map[string]*symbolReconcileState
-	stopCh   chan struct{}
-	done     chan struct{}
-	running  bool
+	mu        sync.Mutex
+	symbols   map[string]*symbolReconcileState
+	stopCh    chan struct{}
+	done      chan struct{}
+	running   bool
 	triggerCh chan symbolTrigger
 }
 

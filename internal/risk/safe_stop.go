@@ -54,16 +54,16 @@ type GateDecision struct {
 
 // ReasonCode constants for typed Safe_Stop reasons.
 const (
-	ReasonCounterSellFailed    = "counter-sell-terminal-failure"
-	ReasonInstrumentError      = "instrument-metadata-error"
-	ReasonRebalanceTerminal    = "rebalance-terminal-failure"
-	ReasonStaleTicker          = "stale-ticker"
-	ReasonPersistenceFailure   = "persistence-write-failure"
-	ReasonPrivateWSUncertain   = "private-ws-uncertain"
-	ReasonAccountReconcile     = "account-reconciliation-uncertain"
-	ReasonPortfolioRisk        = "portfolio-risk-uncertain"
-	ReasonMigrationConflict    = "migration-conflict"
-	ReasonUnknownEffect        = "unknown-exchange-effect"
+	ReasonCounterSellFailed  = "counter-sell-terminal-failure"
+	ReasonInstrumentError    = "instrument-metadata-error"
+	ReasonRebalanceTerminal  = "rebalance-terminal-failure"
+	ReasonStaleTicker        = "stale-ticker"
+	ReasonPersistenceFailure = "persistence-write-failure"
+	ReasonPrivateWSUncertain = "private-ws-uncertain"
+	ReasonAccountReconcile   = "account-reconciliation-uncertain"
+	ReasonPortfolioRisk      = "portfolio-risk-uncertain"
+	ReasonMigrationConflict  = "migration-conflict"
+	ReasonUnknownEffect      = "unknown-exchange-effect"
 )
 
 // SymbolSafeStopState tracks Safe_Stop state for a single symbol.
@@ -83,10 +83,10 @@ type SafeStopReason struct {
 
 // SharedDependencyHealth tracks the health of shared dependencies.
 type SharedDependencyHealth struct {
-	PersistenceHealthy         bool
-	PrivateWSHealthy           bool
-	AccountReconcileHealthy    bool
-	PortfolioRiskHealthy       bool
+	PersistenceHealthy      bool
+	PrivateWSHealthy        bool
+	AccountReconcileHealthy bool
+	PortfolioRiskHealthy    bool
 }
 
 // TradingGate implements the design's TradingGate interface:

@@ -38,8 +38,8 @@ type GridConfig struct {
 	FeeRate         decimal.Decimal `json:"feeRate" yaml:"fee_rate"`                  // 单边手续费率 (e.g., 0.001 = 0.1%)
 	TakeProfitRatio decimal.Decimal `json:"takeProfitRatio" yaml:"take_profit_ratio"` // 止盈比例（可选）
 	StopLossRatio   decimal.Decimal `json:"stopLossRatio" yaml:"stop_loss_ratio"`     // 止损比例（可选）
-	ReinvestProfit  bool            `json:"reinvestProfit" yaml:"reinvest_profit"`     // 是否复投利润
-	Drift           *DriftConfig    `json:"drift,omitempty" yaml:"drift,omitempty"`    // Drift configuration (nil = disabled)
+	ReinvestProfit  bool            `json:"reinvestProfit" yaml:"reinvest_profit"`    // 是否复投利润
+	Drift           *DriftConfig    `json:"drift,omitempty" yaml:"drift,omitempty"`   // Drift configuration (nil = disabled)
 }
 
 // GridLevel represents a single price level in the grid.

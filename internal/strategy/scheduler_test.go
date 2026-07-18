@@ -142,8 +142,8 @@ func TestLoadStrategy_GridWithNilConfig(t *testing.T) {
 func TestLoadStrategy_MeanReversionWithNilConfig(t *testing.T) {
 	s := newScheduler()
 	config := StrategyConfig{
-		StrategyID: "x",
-		Type:       "mean_reversion",
+		StrategyID:    "x",
+		Type:          "mean_reversion",
 		MeanReversion: nil,
 	}
 

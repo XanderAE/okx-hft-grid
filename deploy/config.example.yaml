@@ -85,6 +85,7 @@ risk_limits:
 
 metrics_port: 9090
 websocket_url: "wss://ws.okx.com:8443/ws/v5/public"
+private_websocket_url: "wss://ws.okx.com:8443/ws/v5/private"
 rest_url: "https://www.okx.com"
 
 # Transitional composition field consumed by the current command wiring. It is

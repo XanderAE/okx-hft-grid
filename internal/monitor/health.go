@@ -37,13 +37,13 @@ type SymbolHealthSnapshot struct {
 
 // HealthSnapshot is the complete machine-readable health output.
 type HealthSnapshot struct {
-	State                HealthState                        `json:"state"`
-	Location             string                             `json:"location"`
-	ServiceExpected      bool                               `json:"service_expected"`
-	StateDirectoryWritable bool                             `json:"state_directory_writable"`
-	PrivateWS            PrivateWSHealthSnapshot            `json:"private_ws"`
-	Reconciliation       ReconciliationHealthSnapshot       `json:"reconciliation"`
-	Symbols              map[string]SymbolHealthSnapshot    `json:"symbols"`
+	State                  HealthState                     `json:"state"`
+	Location               string                          `json:"location"`
+	ServiceExpected        bool                            `json:"service_expected"`
+	StateDirectoryWritable bool                            `json:"state_directory_writable"`
+	PrivateWS              PrivateWSHealthSnapshot         `json:"private_ws"`
+	Reconciliation         ReconciliationHealthSnapshot    `json:"reconciliation"`
+	Symbols                map[string]SymbolHealthSnapshot `json:"symbols"`
 }
 
 // HealthRegistry aggregates dependency and symbol states to produce the fixed
@@ -54,8 +54,8 @@ type HealthSnapshot struct {
 type HealthRegistry struct {
 	mu sync.RWMutex
 
-	location             string
-	serviceExpected      bool
+	location               string
+	serviceExpected        bool
 	stateDirectoryWritable bool
 
 	// Private_WS state

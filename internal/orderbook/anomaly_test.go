@@ -12,9 +12,9 @@ func TestCheckCrossedBook_Detected(t *testing.T) {
 
 	// Create a crossed book: bestBid (101) >= bestAsk (100)
 	snapshot := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
-		Asks:   []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
+		Asks:       []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
 		SequenceID: 1,
 		Timestamp:  1000,
 	}
@@ -36,9 +36,9 @@ func TestCheckCrossedBook_EqualPrices(t *testing.T) {
 
 	// bestBid == bestAsk (both 100) should trigger anomaly
 	snapshot := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
-		Asks:   []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
+		Asks:       []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
 		SequenceID: 1,
 		Timestamp:  1000,
 	}
@@ -56,9 +56,9 @@ func TestCheckCrossedBook_Normal(t *testing.T) {
 
 	// Normal book: bestBid (99) < bestAsk (101)
 	snapshot := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("99.0"), Quantity: d("1.0")}},
-		Asks:   []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("99.0"), Quantity: d("1.0")}},
+		Asks:       []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
 		SequenceID: 1,
 		Timestamp:  1000,
 	}
@@ -128,9 +128,9 @@ func TestCheckCrossedBook_AlreadyResyncing(t *testing.T) {
 
 	// Set up a book then put it into resyncing state
 	snapshot := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
-		Asks:   []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
+		Asks:       []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
 		SequenceID: 1,
 		Timestamp:  1000,
 	}
@@ -528,9 +528,9 @@ func TestResyncDiscardsIncrementalUpdates(t *testing.T) {
 
 	// Set up a book and trigger resync
 	snapshot := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
-		Asks:   []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("100.0"), Quantity: d("1.0")}},
+		Asks:       []PriceLevel{{Price: d("101.0"), Quantity: d("1.0")}},
 		SequenceID: 1,
 		Timestamp:  1000,
 	}
@@ -557,9 +557,9 @@ func TestResyncDiscardsIncrementalUpdates(t *testing.T) {
 
 	// New snapshot should clear resyncing flag
 	snapshot2 := &OrderBookSnapshot{
-		Symbol: "ETH-USDT",
-		Bids:   []PriceLevel{{Price: d("100.0"), Quantity: d("2.0")}},
-		Asks:   []PriceLevel{{Price: d("101.0"), Quantity: d("2.0")}},
+		Symbol:     "ETH-USDT",
+		Bids:       []PriceLevel{{Price: d("100.0"), Quantity: d("2.0")}},
+		Asks:       []PriceLevel{{Price: d("101.0"), Quantity: d("2.0")}},
 		SequenceID: 10,
 		Timestamp:  2000,
 	}

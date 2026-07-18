@@ -13,13 +13,13 @@ type RiskDecision struct {
 
 // RiskMetrics holds the current risk state summary.
 type RiskMetrics struct {
-	DailyPnL             decimal.Decimal            // Today's realized + unrealized PnL
-	TotalExposure        decimal.Decimal            // Sum of absolute notional across all symbols
-	PositionsBySymbol    map[string]decimal.Decimal  // Per-symbol notional exposure
-	OpenOrdersBySymbol   map[string]int             // Per-symbol open order count
-	OrdersInLastSecond   int                        // Orders submitted in the last 1s window
-	EmergencyStopActive  bool                       // Whether emergency stop is engaged
-	EmergencyStopReason  string                     // Reason for emergency stop (if active)
+	DailyPnL            decimal.Decimal            // Today's realized + unrealized PnL
+	TotalExposure       decimal.Decimal            // Sum of absolute notional across all symbols
+	PositionsBySymbol   map[string]decimal.Decimal // Per-symbol notional exposure
+	OpenOrdersBySymbol  map[string]int             // Per-symbol open order count
+	OrdersInLastSecond  int                        // Orders submitted in the last 1s window
+	EmergencyStopActive bool                       // Whether emergency stop is engaged
+	EmergencyStopReason string                     // Reason for emergency stop (if active)
 }
 
 // RiskManager defines the interface for real-time trading risk management.
@@ -58,11 +58,11 @@ type RiskManager interface {
 // OrderRequest is re-exported here for convenience in risk check signatures.
 // This avoids circular imports with the execution package.
 type OrderRequest struct {
-	Symbol     string            // Trading pair
-	Side       models.Side       // BUY or SELL
-	OrderType  models.OrderType  // Order type
-	Price      decimal.Decimal   // Order price
-	Quantity   decimal.Decimal   // Order quantity
-	StrategyID string            // Associated strategy ID
-	SpreadBps  int               // Current spread in basis points (for min spread check)
+	Symbol     string           // Trading pair
+	Side       models.Side      // BUY or SELL
+	OrderType  models.OrderType // Order type
+	Price      decimal.Decimal  // Order price
+	Quantity   decimal.Decimal  // Order quantity
+	StrategyID string           // Associated strategy ID
+	SpreadBps  int              // Current spread in basis points (for min spread check)
 }

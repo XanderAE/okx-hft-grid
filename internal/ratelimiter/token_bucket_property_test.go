@@ -211,6 +211,7 @@ func TestProperty_RateLimitInvariant_BlockingTimeoutDoesNotExceed5Seconds(t *tes
 			currentTime = currentTime.Add(100 * time.Millisecond)
 			return currentTime
 		}
+		tb.sleepFunc = func(d time.Duration) {} // no-op: simulated clock advances via nowFunc
 		tb.buckets["test/slow"].lastRefill = startTime
 
 		// Drain all tokens.

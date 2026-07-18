@@ -500,3 +500,123 @@ func (preservationDriftExecution) GetOrderStatus(string) (models.OrderStatus, er
 func (preservationDriftExecution) OnOrderUpdate(models.OrderUpdateEvent)        {}
 func (preservationDriftExecution) GetPosition(string) (*models.Position, error) { return nil, nil }
 func (preservationDriftExecution) GetAllOpenOrders() ([]*models.Order, error)   { return nil, nil }
+
+// **Validates: Requirements 3.6, 3.7**
+//
+// PRE-06 captures the production profile baseline: trading_enabled=false,
+// Singapore identity, cash mode, approved timing/range/state values, and
+// empty mean reversion. This proves the production profile semantics are
+// preserved on the unfixed code.
+func TestProperty2_Preservation_PRE06_ProductionProfileBaseline(t *testing.T) {
+	clearProductionCredentialEnvironment(t)
+
+	rapid.Check(t, func(t *rapid.T) {
+		cfg := validProductionConfigForCmd()
+
+		// trading_enabled must be false
+		if cfg.TradingEnabled {
+			t.Fatal("PRE-06 production profile has trading_enabled=true")
+		}
+
+		// Singapore identity
+		if cfg.Deployment.Location != config.ApprovedProductionLocation {
+			t.Fatalf("PRE-06 deployment location changed: %s", cfg.Deployment.Location)
+		}
+
+		// Cash mode
+		if cfg.Execution.TDMode != config.ApprovedTradingMode {
+			t.Fatalf("PRE-06 td_mode changed: %s", cfg.Execution.TDMode)
+		}
+
+		// Approved timing values
+		if cfg.PrivateWS.HeartbeatInterval != config.ApprovedPrivateWSHeartbeat {
+			t.Fatalf("PRE-06 heartbeat_interval changed: %s", cfg.PrivateWS.HeartbeatInterval)
+		}
+		if cfg.PrivateWS.LivenessTimeout != config.ApprovedPrivateWSLivenessTimeout {
+			t.Fatalf("PRE-06 liveness_timeout changed: %s", cfg.PrivateWS.LivenessTimeout)
+		}
+		if cfg.PrivateWS.ReconnectStartDeadline != config.ApprovedReconnectStartDeadline {
+			t.Fatalf("PRE-06 reconnect_start_deadline changed: %s", cfg.PrivateWS.ReconnectStartDeadline)
+		}
+		if cfg.Reconciliation.Interval != config.ApprovedReconciliationInterval {
+			t.Fatalf("PRE-06 reconciliation.interval changed: %s", cfg.Reconciliation.Interval)
+		}
+		if cfg.Rebalancer.Interval != config.ApprovedRebalancerInterval {
+			t.Fatalf("PRE-06 rebalancer.interval changed: %s", cfg.Rebalancer.Interval)
+		}
+		if cfg.Ticker.MaxAge != config.ApprovedTickerMaxAge {
+			t.Fatalf("PRE-06 ticker.max_age changed: %s", cfg.Ticker.MaxAge)
+		}
+
+		// Approved range values
+		if !cfg.AdaptiveRange.MinHalfWidth.Equal(config.ApprovedMinimumHalfWidth) {
+			t.Fatalf("PRE-06 min_half_width changed: %s", cfg.AdaptiveRange.MinHalfWidth)
+		}
+		if !cfg.AdaptiveRange.MaxHalfWidth.Equal(config.ApprovedMaximumHalfWidth) {
+			t.Fatalf("PRE-06 max_half_width changed: %s", cfg.AdaptiveRange.MaxHalfWidth)
+		}
+		if !cfg.AdaptiveRange.Symmetric {
+			t.Fatal("PRE-06 adaptive_range.symmetric changed to false")
+		}
+
+		// Empty mean reversion
+		if len(cfg.MeanReversionConfigs) != 0 {
+			t.Fatalf("PRE-06 mean_reversion_configs non-empty: %d", len(cfg.MeanReversionConfigs))
+		}
+
+		// Production validation must pass
+		if err := config.ValidateProductionConfig(cfg); err != nil {
+			t.Fatalf("PRE-06 production profile validation failed: %v", err)
+		}
+
+		// Sanitized effective config must be buildable and contain approved fields
+		summary, err := config.EffectiveConfigSanitized(cfg)
+		if err != nil {
+			t.Fatalf("PRE-06 effective config summary build failed: %v", err)
+		}
+		for _, expected := range []string{
+			config.ApprovedProductionLocation,
+			"cash",
+			"false", // trading_enabled
+			"DOGE-USDT",
+			"WIF-USDT",
+		} {
+			if !containsStr(summary, expected) {
+				t.Fatalf("PRE-06 effective config missing %q: %s", expected, summary)
+			}
+		}
+	})
+}
+
+func validProductionConfigForCmd() *config.SystemConfig {
+	return &config.SystemConfig{
+		Symbols:              []string{"DOGE-USDT", "WIF-USDT"},
+		MeanReversionConfigs: []models.MeanReversionConfig{},
+		WebSocketURL:         config.DefaultPublicWebSocketURL,
+		PrivateWebSocketURL:  config.DefaultPrivateWebSocketURL,
+		RESTURL:              config.DefaultRESTBaseURL,
+		ReconcileIntervalSec: 30,
+		PersistencePath:      config.ApprovedStatePath,
+		Deployment:           config.DeploymentConfig{Location: config.ApprovedProductionLocation},
+		Execution:            config.ExecutionConfig{TDMode: config.ApprovedTradingMode},
+		PrivateWS: config.PrivateWSConfig{
+			HeartbeatInterval:      config.ApprovedPrivateWSHeartbeat,
+			LivenessTimeout:        config.ApprovedPrivateWSLivenessTimeout,
+			ReconnectStartDeadline: config.ApprovedReconnectStartDeadline,
+		},
+		Reconciliation: config.ReconciliationConfig{Interval: config.ApprovedReconciliationInterval},
+		Rebalancer: config.RebalancerConfig{
+			Interval:  config.ApprovedRebalancerInterval,
+			MaxJitter: config.MaximumRebalancerJitter,
+		},
+		Ticker: config.TickerConfig{MaxAge: config.ApprovedTickerMaxAge},
+		AdaptiveRange: config.AdaptiveRangeConfig{
+			MinHalfWidth: config.ApprovedMinimumHalfWidth,
+			MaxHalfWidth: config.ApprovedMaximumHalfWidth,
+			Symmetric:    true,
+			WidthMode:    config.PerSideHalfWidthMode,
+		},
+		ExecutionMode:  config.ExecutionModeProduction,
+		TradingEnabled: false,
+	}
+}

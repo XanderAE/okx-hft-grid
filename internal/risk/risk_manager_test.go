@@ -11,12 +11,12 @@ import (
 
 func defaultLimits() *models.RiskLimits {
 	return &models.RiskLimits{
-		MaxPositionPerSymbol: decimal.NewFromInt(10000),  // 10,000 USDT per symbol
-		MaxTotalPosition:     decimal.NewFromInt(50000),  // 50,000 USDT total
-		MaxDailyLoss:         decimal.NewFromInt(500),    // 500 USDT max daily loss
-		MaxOrdersPerSecond:   10,                         // 10 orders/sec
-		MaxOpenOrders:        20,                         // 20 open orders per symbol
-		MinSpreadBps:         5,                          // 5 bps minimum spread
+		MaxPositionPerSymbol: decimal.NewFromInt(10000), // 10,000 USDT per symbol
+		MaxTotalPosition:     decimal.NewFromInt(50000), // 50,000 USDT total
+		MaxDailyLoss:         decimal.NewFromInt(500),   // 500 USDT max daily loss
+		MaxOrdersPerSecond:   10,                        // 10 orders/sec
+		MaxOpenOrders:        20,                        // 20 open orders per symbol
+		MinSpreadBps:         5,                         // 5 bps minimum spread
 	}
 }
 

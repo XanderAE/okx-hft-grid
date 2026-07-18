@@ -71,6 +71,10 @@ diff /etc/okx-hft-grid/config.yaml <source>/deploy/config.example.yaml
 - [ ] `persistence_path` = `/var/lib/okx-hft-grid/hft_state.db`
 - [ ] `symbols` = exactly `["DOGE-USDT", "WIF-USDT"]`
 - [ ] `mean_reversion_configs` = `[]` (empty)
+- [ ] `websocket_url` = `wss://ws.okx.com:8443/ws/v5/public` (public market data role)
+- [ ] `private_websocket_url` = `wss://ws.okx.com:8443/ws/v5/private` (private orders/fills role)
+- [ ] `rest_url` = `https://www.okx.com`
+- [ ] Public and private WebSocket endpoints are distinct (never the same URL)
 - [ ] `trading_enabled` = `false` (reconcile-only staged deployment)
 - [ ] No `sed` mutation required or planned
 - [ ] No Tokyo-specific values present
@@ -303,6 +307,9 @@ sudo systemctl start okx-hft-grid
 
 | Item | Requirement |
 |------|-------------|
+| Public WebSocket endpoint | `websocket_url` = `wss://ws.okx.com:8443/ws/v5/public` |
+| Private WebSocket endpoint | `private_websocket_url` = `wss://ws.okx.com:8443/ws/v5/private` |
+| Endpoint role separation | Public and private WebSocket URLs must be distinct |
 | No `sed` dependency | Runtime behavior from version-controlled config only |
 | Singapore location | All artifacts, health, config reference `ap-southeast-1` |
 | No Tokyo assumptions | Old IPs, latency, paths invalidated |

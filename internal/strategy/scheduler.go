@@ -12,11 +12,11 @@ import (
 )
 
 var (
-	ErrStrategyNotFound    = errors.New("strategy not found")
-	ErrStrategyExists      = errors.New("strategy already exists")
+	ErrStrategyNotFound      = errors.New("strategy not found")
+	ErrStrategyExists        = errors.New("strategy already exists")
 	ErrStrategyAlreadyActive = errors.New("strategy is already active")
-	ErrStrategyStopped     = errors.New("strategy is already stopped")
-	ErrInvalidConfig       = errors.New("invalid strategy config")
+	ErrStrategyStopped       = errors.New("strategy is already stopped")
+	ErrInvalidConfig         = errors.New("invalid strategy config")
 )
 
 // StrategyState represents the current state of a strategy instance.

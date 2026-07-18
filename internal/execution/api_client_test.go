@@ -21,7 +21,7 @@ import (
 // mockRateLimiter is a no-op rate limiter for testing.
 type mockRateLimiter struct{}
 
-func (m *mockRateLimiter) TryAcquire(endpoint string) error        { return nil }
+func (m *mockRateLimiter) TryAcquire(endpoint string) error                   { return nil }
 func (m *mockRateLimiter) GetNextAvailableTime(endpoint string) time.Duration { return 0 }
 
 func newTestClient(serverURL string) *APIClient {

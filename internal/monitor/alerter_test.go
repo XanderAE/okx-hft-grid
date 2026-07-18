@@ -14,12 +14,12 @@ import (
 
 // mockChannel is a test implementation of AlertChannel.
 type mockChannel struct {
-	name       string
-	sendErr    error
-	sent       []Alert
-	sendCount  int
-	mu         sync.Mutex
-	failUntil  int // fail for the first N calls
+	name      string
+	sendErr   error
+	sent      []Alert
+	sendCount int
+	mu        sync.Mutex
+	failUntil int // fail for the first N calls
 }
 
 func newMockChannel(name string) *mockChannel {

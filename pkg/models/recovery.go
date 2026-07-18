@@ -110,9 +110,9 @@ type FillObservation struct {
 // quantity is deliberately absent: the store derives it from the committed
 // cumulative watermark, preventing stale callers from over-covering a fill.
 type CounterOrderPlan struct {
-	Eligibility     FillEligibility
-	Price           decimal.Decimal
-	Purpose         string
+	Eligibility      FillEligibility
+	Price            decimal.Decimal
+	Purpose          string
 	IneligibleReason string
 }
 
@@ -152,53 +152,53 @@ type GridStateRecord struct {
 }
 
 type CounterOrderIntent struct {
-	IntentID                  string
-	FillKey                   string
-	Symbol                    string
-	Side                      Side
-	Price                     decimal.Decimal
-	Quantity                  decimal.Decimal
-	Purpose                   string
+	IntentID                   string
+	FillKey                    string
+	Symbol                     string
+	Side                       Side
+	Price                      decimal.Decimal
+	Quantity                   decimal.Decimal
+	Purpose                    string
 	DeterministicClientOrderID string
-	ObservedAt                time.Time
-	InitiationDeadline        time.Time
-	TerminalDeadline          time.Time
-	InitiatedAt               time.Time
-	TerminalAt                time.Time
-	Status                    IntentStatus
-	Attempts                  int
-	ExchangeOrderID           string
-	FinalErrorClass           FailureClass
-	FinalSCode                string
-	FinalSMsg                 string
+	ObservedAt                 time.Time
+	InitiationDeadline         time.Time
+	TerminalDeadline           time.Time
+	InitiatedAt                time.Time
+	TerminalAt                 time.Time
+	Status                     IntentStatus
+	Attempts                   int
+	ExchangeOrderID            string
+	FinalErrorClass            FailureClass
+	FinalSCode                 string
+	FinalSMsg                  string
 }
 
 type OutboxRecord struct {
-	OutboxID      string
-	IntentID      string
-	Status        OutboxStatus
-	LeaseOwner    string
-	LeaseUntil    time.Time
-	NextAttemptAt time.Time
-	AttemptCount  int
+	OutboxID       string
+	IntentID       string
+	Status         OutboxStatus
+	LeaseOwner     string
+	LeaseUntil     time.Time
+	NextAttemptAt  time.Time
+	AttemptCount   int
 	LastErrorClass FailureClass
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type BotOrderLineage struct {
-	ClientOrderID    string
-	ExchangeOrderID  string
-	Symbol           string
-	StrategyID       string
-	Purpose          string
-	ParentOrderID    string
-	IntentID         string
-	Side             Side
-	State            OrderStatus
+	ClientOrderID     string
+	ExchangeOrderID   string
+	Symbol            string
+	StrategyID        string
+	Purpose           string
+	ParentOrderID     string
+	IntentID          string
+	Side              Side
+	State             OrderStatus
 	CumulativeFillQty decimal.Decimal
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 type ReconciliationWatermark struct {
@@ -245,12 +245,12 @@ type FillApplyResult struct {
 }
 
 type OrderEffect struct {
-	Found             bool
-	ExchangeOrderID   string
-	ClientOrderID     string
-	Status            OrderStatus
-	SCode             string
-	SMsg              string
+	Found           bool
+	ExchangeOrderID string
+	ClientOrderID   string
+	Status          OrderStatus
+	SCode           string
+	SMsg            string
 }
 
 func (e OrderEffect) ExchangeConfirmed() bool {

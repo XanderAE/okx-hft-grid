@@ -77,8 +77,8 @@ func TestProperty1_BugCondition_EXP01_DuplicateWSAndRESTReplay(t *testing.T) {
 			Symbol: "DOGE-USDT", ExchangeOrderID: "buy-order-1",
 			ExchangeFillID: "fill-1", Side: models.SideBuy,
 			CumulativeQuantity: decimal.NewFromInt(100),
-			FillPrice: decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
-			Source: models.FillSourcePrivateWS,
+			FillPrice:          decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
+			Source:            models.FillSourcePrivateWS,
 			ExchangeTimestamp: clock.Add(-50 * time.Millisecond), ObservedAt: clock,
 		}
 		plan := models.CounterOrderPlan{
@@ -145,8 +145,8 @@ func TestProperty1_BugCondition_EXP02_CumulativeFillDelta(t *testing.T) {
 			Symbol: "DOGE-USDT", ExchangeOrderID: "buy-order-2",
 			ExchangeFillID: "fill-2a", Side: models.SideBuy,
 			CumulativeQuantity: decimal.NewFromInt(100),
-			FillPrice: decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
-			Source: models.FillSourcePrivateWS,
+			FillPrice:          decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
+			Source:            models.FillSourcePrivateWS,
 			ExchangeTimestamp: clock.Add(-50 * time.Millisecond), ObservedAt: clock,
 		}
 		var delta1, delta2 decimal.Decimal
@@ -166,8 +166,8 @@ func TestProperty1_BugCondition_EXP02_CumulativeFillDelta(t *testing.T) {
 			Symbol: "DOGE-USDT", ExchangeOrderID: "buy-order-2",
 			ExchangeFillID: "fill-2b", Side: models.SideBuy,
 			CumulativeQuantity: decimal.NewFromInt(150),
-			FillPrice: decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
-			Source: models.FillSourcePrivateWS,
+			FillPrice:          decimal.NewFromFloat(0.15), Fee: decimal.NewFromFloat(0.01),
+			Source:            models.FillSourcePrivateWS,
 			ExchangeTimestamp: clock.Add(-25 * time.Millisecond), ObservedAt: clock.Add(time.Second),
 		}
 		err = store.WithImmediateTx(context.Background(), func(dtx *persistence.DurableTx) error {
@@ -224,7 +224,7 @@ func TestProperty1_BugCondition_EXP03_AcceptThenResponseLost(t *testing.T) {
 		req := NormalizedOrderRequest{
 			Symbol: "DOGE-USDT", Side: models.SideSell,
 			OrderType: models.OrderTypePostOnly,
-			Price: decimal.NewFromFloat(0.16), Quantity: decimal.NewFromInt(100),
+			Price:     decimal.NewFromFloat(0.16), Quantity: decimal.NewFromInt(100),
 			ClOrdID: "tb1-test-1",
 		}
 
@@ -355,7 +355,7 @@ func TestProperty1_BugCondition_EXP07_CashModeAndDeterministicClientID(t *testin
 		_, _ = gateway.PlaceOrder(ctx, NormalizedOrderRequest{
 			Symbol: symbol, Side: models.SideBuy,
 			OrderType: models.OrderTypePostOnly,
-			Price: decimal.NewFromInt(2), Quantity: decimal.NewFromInt(10),
+			Price:     decimal.NewFromInt(2), Quantity: decimal.NewFromInt(10),
 			ClOrdID: "tb1-deterministic",
 		})
 
@@ -363,7 +363,7 @@ func TestProperty1_BugCondition_EXP07_CashModeAndDeterministicClientID(t *testin
 		_, emptyErr := gateway.PlaceOrder(ctx, NormalizedOrderRequest{
 			Symbol: symbol, Side: models.SideBuy,
 			OrderType: models.OrderTypePostOnly,
-			Price: decimal.NewFromInt(2), Quantity: decimal.NewFromInt(10),
+			Price:     decimal.NewFromInt(2), Quantity: decimal.NewFromInt(10),
 			ClOrdID: "",
 		})
 
@@ -413,7 +413,7 @@ func TestProperty1_BugCondition_EXP08_ArbitraryInstrumentMultiples(t *testing.T)
 		req := NormalizedOrderRequest{
 			Symbol: symbol, Side: models.SideBuy,
 			OrderType: models.OrderTypePostOnly,
-			Price: candidate, Quantity: decimal.NewFromInt(10),
+			Price:     candidate, Quantity: decimal.NewFromInt(10),
 			ClOrdID: "tb1-norm-test",
 		}
 		result := NormalizeOrder(req, rules, now)

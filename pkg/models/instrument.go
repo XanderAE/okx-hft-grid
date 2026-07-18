@@ -17,9 +17,9 @@ var (
 // strings to avoid binary float precision errors.
 type InstrumentRules struct {
 	Symbol      string          `json:"symbol"`
-	TickSize    decimal.Decimal `json:"tickSz"`    // price step
-	LotSize     decimal.Decimal `json:"lotSz"`     // quantity step
-	MinSize     decimal.Decimal `json:"minSz"`     // minimum order quantity
+	TickSize    decimal.Decimal `json:"tickSz"`      // price step
+	LotSize     decimal.Decimal `json:"lotSz"`       // quantity step
+	MinSize     decimal.Decimal `json:"minSz"`       // minimum order quantity
 	MinNotional decimal.Decimal `json:"minNotional"` // minimum price*qty (zero if not applicable)
 	FetchedAt   time.Time       `json:"fetchedAt"`
 	ExpiresAt   time.Time       `json:"expiresAt"`

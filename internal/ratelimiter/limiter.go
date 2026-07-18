@@ -17,9 +17,9 @@ type RateLimiter interface {
 
 // EndpointConfig holds rate limit configuration for a specific API endpoint.
 type EndpointConfig struct {
-	Endpoint    string        // API endpoint path, e.g. "trade/order"
-	MaxTokens   int           // Maximum tokens in the bucket
-	RefillRate  int           // Tokens refilled per interval
+	Endpoint       string        // API endpoint path, e.g. "trade/order"
+	MaxTokens      int           // Maximum tokens in the bucket
+	RefillRate     int           // Tokens refilled per interval
 	RefillInterval time.Duration // Refill interval duration
 }
 

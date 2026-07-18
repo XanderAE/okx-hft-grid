@@ -16,10 +16,10 @@ import (
 // --- Test infrastructure: mock gateway, observer, store ---
 
 type mockReconcileGateway struct {
-	mu          sync.Mutex
-	fillPages   map[string][]FillPage // symbol -> pages in order
-	fillErr     error
-	pageIndex   map[string]int
+	mu        sync.Mutex
+	fillPages map[string][]FillPage // symbol -> pages in order
+	fillErr   error
+	pageIndex map[string]int
 }
 
 func newMockReconcileGateway() *mockReconcileGateway {
@@ -86,11 +86,11 @@ func (m *mockReconcileGateway) GetInstrumentRules(_ context.Context, _ string) (
 
 // mockFillObserver records all ObserveFill calls for assertion.
 type mockFillObserver struct {
-	mu       sync.Mutex
-	calls    []models.FillObservation
-	results  []*models.FillApplyResult
-	err      error
-	callIdx  int
+	mu      sync.Mutex
+	calls   []models.FillObservation
+	results []*models.FillApplyResult
+	err     error
+	callIdx int
 }
 
 func newMockFillObserver() *mockFillObserver {
@@ -140,10 +140,10 @@ func (o *mockFillObserver) Calls() []models.FillObservation {
 
 // mockReconciliationStore holds watermarks in memory.
 type mockReconciliationStore struct {
-	mu         sync.Mutex
-	watermarks map[string]*models.ReconciliationWatermark
-	loadErr    error
-	commitErr  error
+	mu          sync.Mutex
+	watermarks  map[string]*models.ReconciliationWatermark
+	loadErr     error
+	commitErr   error
 	commitCount int
 }
 

@@ -66,17 +66,19 @@ func (b *bucket) timeUntilNextToken(now time.Time) time.Duration {
 // TokenBucket implements the RateLimiter interface using per-endpoint token buckets.
 // Each endpoint has its own independent bucket with configurable limits.
 type TokenBucket struct {
-	buckets map[string]*bucket
-	mu      sync.RWMutex // protects the buckets map
-	nowFunc func() time.Time
+	buckets   map[string]*bucket
+	mu        sync.RWMutex // protects the buckets map
+	nowFunc   func() time.Time
+	sleepFunc func(time.Duration)
 }
 
 // NewTokenBucketLimiter creates a new TokenBucket rate limiter with the given endpoint configurations.
 // Each endpoint gets its own independent token bucket initialized to full capacity.
 func NewTokenBucketLimiter(configs []EndpointConfig) *TokenBucket {
 	tb := &TokenBucket{
-		buckets: make(map[string]*bucket, len(configs)),
-		nowFunc: time.Now,
+		buckets:   make(map[string]*bucket, len(configs)),
+		nowFunc:   time.Now,
+		sleepFunc: time.Sleep,
 	}
 
 	for _, cfg := range configs {
@@ -140,7 +142,7 @@ func (tb *TokenBucket) TryAcquire(endpoint string) error {
 			waitTime = remaining
 		}
 
-		time.Sleep(waitTime)
+		tb.sleepFunc(waitTime)
 	}
 }
 

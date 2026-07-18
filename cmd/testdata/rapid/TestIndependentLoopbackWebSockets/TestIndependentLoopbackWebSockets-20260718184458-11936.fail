@@ -1,0 +1,9 @@
+# 2026/07/18 18:44:58.245571 [TestIndependentLoopbackWebSockets] [rapid] draw public_path: "/ws/v5/public"
+# 2026/07/18 18:44:58.245571 [TestIndependentLoopbackWebSockets] [rapid] draw private_path: "/ws/v5/private"
+# 2026/07/18 18:44:58.246104 [TestIndependentLoopbackWebSockets] initializeComponents failed: persistence corrupted: persistence: database is corrupted or unreadable: unable to open database file: The system cannot find the path specified.
+# 
+v0.4.8#18247444137460088901
+0x0
+0x0
+0x0
+0x0

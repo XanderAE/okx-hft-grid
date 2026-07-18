@@ -1,0 +1,128 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Reproduce both composition defects on the unfixed baseline": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369259609
+      },
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369271640
+      }
+    ],
+    "2. Establish preservation baselines on the unfixed code": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369259675
+      },
+      {
+        "executionId": "dd2973d9-1a6a-44c0-b986-fc4dd63e1e9a",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369463943
+      }
+    ],
+    "3.1 Add role-specific endpoint configuration, resolution, and validation": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369259868
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784370029918
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784371075132
+      }
+    ],
+    "3.2 Explicitly inject the production REST guard and wire WebSocket roles independently": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369259975
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784371081247
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784371930011
+      }
+    ],
+    "3.3 Update only deployment artifacts required by the new field": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369260048
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784371935765
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784372208730
+      }
+    ],
+    "4.1 Rerun focused fix and preservation suites": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369260137
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784372215701
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784372569960
+      }
+    ],
+    "4.2 Run repository-wide validation and produce a sanitized handoff": [
+      {
+        "executionId": "2d0b1ca3-794e-480a-945d-792b76e24c0f",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784369260220
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784372576163
+      },
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784373604552
+      }
+    ],
+    "3. Implement the narrow composition fix": [
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784372209007
+      }
+    ],
+    "4. Validate the fix and preservation properties": [
+      {
+        "executionId": "4daa6d22-1dbd-4007-bd9f-ed700521ac72",
+        "chatSessionId": "sess_ae06aa4e-2e56-4894-90c3-89888dc959d8",
+        "timestamp": 1784373604790
+      }
+    ]
+  }
+}

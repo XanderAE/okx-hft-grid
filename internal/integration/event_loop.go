@@ -86,8 +86,8 @@ type EventLoop struct {
 	logger *log.Logger
 
 	// Internal channels
-	marketDataCh chan models.MarketEvent
-	fillCh       chan models.FillEvent
+	marketDataCh  chan models.MarketEvent
+	fillCh        chan models.FillEvent
 	orderSignalCh chan orderSignal
 
 	// Lifecycle

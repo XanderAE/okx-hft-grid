@@ -7,11 +7,11 @@ import (
 
 // StrategyStatus holds the runtime status of a strategy instance.
 type StrategyStatus struct {
-	StrategyID   string          // Unique strategy identifier
-	Symbol       string          // Trading pair
-	Type         string          // Strategy type: "grid" or "mean_reversion"
-	IsActive     bool            // Whether the strategy is currently running
-	RealizedPnL  decimal.Decimal // Cumulative realized PnL
+	StrategyID    string          // Unique strategy identifier
+	Symbol        string          // Trading pair
+	Type          string          // Strategy type: "grid" or "mean_reversion"
+	IsActive      bool            // Whether the strategy is currently running
+	RealizedPnL   decimal.Decimal // Cumulative realized PnL
 	UnrealizedPnL decimal.Decimal // Current unrealized PnL
 }
 
@@ -26,10 +26,10 @@ type PnLReport struct {
 
 // StrategyConfig is a union configuration that can represent either grid or mean reversion config.
 type StrategyConfig struct {
-	StrategyID      string                     // Unique strategy ID
-	Type            string                     // "grid" or "mean_reversion"
-	Grid            *models.GridConfig         // Grid config (nil if mean reversion)
-	MeanReversion   *models.MeanReversionConfig // Mean reversion config (nil if grid)
+	StrategyID    string                      // Unique strategy ID
+	Type          string                      // "grid" or "mean_reversion"
+	Grid          *models.GridConfig          // Grid config (nil if mean reversion)
+	MeanReversion *models.MeanReversionConfig // Mean reversion config (nil if grid)
 }
 
 // StrategyEngine defines the interface for managing and scheduling trading strategies.

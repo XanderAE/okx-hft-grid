@@ -30,9 +30,9 @@ type SignalDirection int
 
 const (
 	SignalDirectionNone  SignalDirection = iota // 无信号
-	SignalDirectionBuy                         // 买入信号
-	SignalDirectionSell                        // 卖出信号
-	SignalDirectionClose                       // 平仓信号
+	SignalDirectionBuy                          // 买入信号
+	SignalDirectionSell                         // 卖出信号
+	SignalDirectionClose                        // 平仓信号
 )
 
 // String returns the string representation of SignalDirection.
@@ -53,12 +53,12 @@ func (s SignalDirection) String() string {
 
 // MeanReversionConfig holds the configuration for a mean reversion strategy.
 type MeanReversionConfig struct {
-	Symbol         string          `json:"symbol" yaml:"symbol"`                   // 交易对
-	LookbackPeriod int             `json:"lookbackPeriod" yaml:"lookback_period"`  // 回看周期
+	Symbol         string          `json:"symbol" yaml:"symbol"`                  // 交易对
+	LookbackPeriod int             `json:"lookbackPeriod" yaml:"lookback_period"` // 回看周期
 	EntryThreshold decimal.Decimal `json:"entryThreshold" yaml:"entry_threshold"` // 入场偏离阈值（标准差倍数）
 	ExitThreshold  decimal.Decimal `json:"exitThreshold" yaml:"exit_threshold"`   // 出场阈值
-	MAType         MAType          `json:"maType" yaml:"ma_type"`                  // 均线类型
-	OrderSize      decimal.Decimal `json:"orderSize" yaml:"order_size"`            // 每次下单量
-	MaxPosition    decimal.Decimal `json:"maxPosition" yaml:"max_position"`        // 最大持仓量
-	CooldownMs     int             `json:"cooldownMs" yaml:"cooldown_ms"`          // 信号冷却时间（毫秒）
+	MAType         MAType          `json:"maType" yaml:"ma_type"`                 // 均线类型
+	OrderSize      decimal.Decimal `json:"orderSize" yaml:"order_size"`           // 每次下单量
+	MaxPosition    decimal.Decimal `json:"maxPosition" yaml:"max_position"`       // 最大持仓量
+	CooldownMs     int             `json:"cooldownMs" yaml:"cooldown_ms"`         // 信号冷却时间（毫秒）
 }

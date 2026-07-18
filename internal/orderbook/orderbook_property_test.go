@@ -199,9 +199,9 @@ func TestProperty_IncrementalUpdate_NewPriceInsertion(t *testing.T) {
 		naq := genQty(t, "naq")
 
 		delta := &OrderBookDelta{
-			Symbol: sym,
-			Bids:   []PriceLevel{{Price: nbp, Quantity: nbq}},
-			Asks:   []PriceLevel{{Price: nap, Quantity: naq}},
+			Symbol:     sym,
+			Bids:       []PriceLevel{{Price: nbp, Quantity: nbq}},
+			Asks:       []PriceLevel{{Price: nap, Quantity: naq}},
 			SequenceID: 101, Timestamp: 1001,
 		}
 		if err := ob.UpdateIncremental(sym, delta); err != nil {

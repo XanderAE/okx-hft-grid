@@ -10,11 +10,11 @@ import (
 
 // mockEmergencyCallback is a test double for EmergencyStopCallback.
 type mockEmergencyCallback struct {
-	mu                    sync.Mutex
-	cancelAllOrdersCalls  int
+	mu                     sync.Mutex
+	cancelAllOrdersCalls   int
 	stopAllStrategiesCalls int
 	sendCriticalAlertCalls int
-	lastAlertReason       string
+	lastAlertReason        string
 }
 
 func (m *mockEmergencyCallback) CancelAllOrders() error {

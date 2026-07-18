@@ -41,6 +41,7 @@ type SystemConfig struct {
 	RiskLimits           models.RiskLimits            `yaml:"risk_limits"`
 	ExchangeMinOrderSize map[string]decimal.Decimal   `yaml:"exchange_min_order_size"`
 	WebSocketURL         string                       `yaml:"websocket_url"`
+	PrivateWebSocketURL  string                       `yaml:"private_websocket_url"`
 	RESTURL              string                       `yaml:"rest_url"`
 	ReconcileIntervalSec int                          `yaml:"reconcile_interval_sec"`
 	PersistencePath      string                       `yaml:"persistence_path"`

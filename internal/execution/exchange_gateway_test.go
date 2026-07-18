@@ -471,10 +471,10 @@ func TestInstrumentRules(t *testing.T) {
 func TestArbitraryDecimalMultiple(t *testing.T) {
 	t.Run("BUY_price_floors_to_tickSz", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "TEST-USDT",
-			TickSize: decimal.RequireFromString("0.0025"),
-			LotSize:  decimal.RequireFromString("1"),
-			MinSize:  decimal.RequireFromString("1"),
+			Symbol:    "TEST-USDT",
+			TickSize:  decimal.RequireFromString("0.0025"),
+			LotSize:   decimal.RequireFromString("1"),
+			MinSize:   decimal.RequireFromString("1"),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}
@@ -501,10 +501,10 @@ func TestArbitraryDecimalMultiple(t *testing.T) {
 
 	t.Run("SELL_price_ceils_to_tickSz", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "TEST-USDT",
-			TickSize: decimal.RequireFromString("0.0025"),
-			LotSize:  decimal.RequireFromString("1"),
-			MinSize:  decimal.RequireFromString("1"),
+			Symbol:    "TEST-USDT",
+			TickSize:  decimal.RequireFromString("0.0025"),
+			LotSize:   decimal.RequireFromString("1"),
+			MinSize:   decimal.RequireFromString("1"),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}
@@ -531,10 +531,10 @@ func TestArbitraryDecimalMultiple(t *testing.T) {
 
 	t.Run("qty_floors_to_lotSz", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "TEST-USDT",
-			TickSize: decimal.RequireFromString("0.01"),
-			LotSize:  decimal.RequireFromString("0.001"),
-			MinSize:  decimal.RequireFromString("0.001"),
+			Symbol:    "TEST-USDT",
+			TickSize:  decimal.RequireFromString("0.01"),
+			LotSize:   decimal.RequireFromString("0.001"),
+			MinSize:   decimal.RequireFromString("0.001"),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}
@@ -561,10 +561,10 @@ func TestArbitraryDecimalMultiple(t *testing.T) {
 
 	t.Run("exact_value_unchanged", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "DOGE-USDT",
-			TickSize: decimal.RequireFromString("0.00001"),
-			LotSize:  decimal.RequireFromString("1"),
-			MinSize:  decimal.RequireFromString("10"),
+			Symbol:    "DOGE-USDT",
+			TickSize:  decimal.RequireFromString("0.00001"),
+			LotSize:   decimal.RequireFromString("1"),
+			MinSize:   decimal.RequireFromString("10"),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}
@@ -670,10 +670,10 @@ func TestArbitraryDecimalMultiple(t *testing.T) {
 func TestMinimums(t *testing.T) {
 	t.Run("below_minSz_is_no_send", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "DOGE-USDT",
-			TickSize: decimal.RequireFromString("0.00001"),
-			LotSize:  decimal.NewFromInt(1),
-			MinSize:  decimal.NewFromInt(10),
+			Symbol:    "DOGE-USDT",
+			TickSize:  decimal.RequireFromString("0.00001"),
+			LotSize:   decimal.NewFromInt(1),
+			MinSize:   decimal.NewFromInt(10),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}
@@ -721,10 +721,10 @@ func TestMinimums(t *testing.T) {
 
 	t.Run("at_exact_minSz_is_allowed", func(t *testing.T) {
 		rules := models.InstrumentRules{
-			Symbol:   "DOGE-USDT",
-			TickSize: decimal.RequireFromString("0.00001"),
-			LotSize:  decimal.NewFromInt(1),
-			MinSize:  decimal.NewFromInt(10),
+			Symbol:    "DOGE-USDT",
+			TickSize:  decimal.RequireFromString("0.00001"),
+			LotSize:   decimal.NewFromInt(1),
+			MinSize:   decimal.NewFromInt(10),
 			FetchedAt: time.Now(),
 			ExpiresAt: time.Now().Add(time.Hour),
 		}

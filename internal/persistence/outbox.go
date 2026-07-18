@@ -57,8 +57,8 @@ func (s *SQLiteStore) ClaimOutbox(ctx context.Context, workerID string, clock Cl
 	// expired lease, and whose next_attempt_at has passed.
 	var (
 		outboxID, intentID, status, leaseOwner, lastErrClass string
-		leaseUntil, nextAttemptAt, createdAt, updatedAt       int64
-		attemptCount                                          int
+		leaseUntil, nextAttemptAt, createdAt, updatedAt      int64
+		attemptCount                                         int
 	)
 	err = tx.QueryRowContext(ctx,
 		`SELECT outbox_id, intent_id, status, lease_owner, lease_until,
@@ -94,9 +94,9 @@ func (s *SQLiteStore) ClaimOutbox(ctx context.Context, workerID string, clock Cl
 	// Load the associated intent
 	var (
 		iSymbol, iPrice, iQty, iPurpose, iClOrdID, iFinalErr, iFinalSCode, iFinalSMsg string
-		iSide, iAttempts                                                                int
-		iObservedAt, iInitDeadline, iTermDeadline, iInitiatedAt, iTerminalAt            int64
-		iStatus, iExchangeOrderID                                                       string
+		iSide, iAttempts                                                              int
+		iObservedAt, iInitDeadline, iTermDeadline, iInitiatedAt, iTerminalAt          int64
+		iStatus, iExchangeOrderID                                                     string
 	)
 	err = tx.QueryRowContext(ctx,
 		`SELECT symbol, side, price, quantity, purpose, deterministic_client_order_id,
@@ -301,7 +301,7 @@ func (s *SQLiteStore) QueryOutboxByIntentID(ctx context.Context, intentID string
 	}
 
 	var (
-		outboxID, status, leaseOwner, lastErrClass string
+		outboxID, status, leaseOwner, lastErrClass      string
 		leaseUntil, nextAttemptAt, createdAt, updatedAt int64
 		attemptCount                                    int
 	)
@@ -379,8 +379,8 @@ func (s *SQLiteStore) LoadRecoveryState(ctx context.Context) ([]models.OutboxRec
 	for rows.Next() {
 		var (
 			outboxID, intentID, status, leaseOwner, lastErrClass string
-			leaseUntil, nextAttemptAt, createdAt, updatedAt       int64
-			attemptCount                                          int
+			leaseUntil, nextAttemptAt, createdAt, updatedAt      int64
+			attemptCount                                         int
 		)
 		if err := rows.Scan(&outboxID, &intentID, &status, &leaseOwner, &leaseUntil,
 			&nextAttemptAt, &attemptCount, &lastErrClass, &createdAt, &updatedAt); err != nil {

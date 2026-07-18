@@ -99,7 +99,7 @@ type OKXPrivateSubRequest struct {
 
 // OKXOrderPush represents the structure of an order push from OKX private WS.
 type OKXOrderPush struct {
-	Arg  OKXPrivateSubArg  `json:"arg"`
+	Arg  OKXPrivateSubArg   `json:"arg"`
 	Data []OKXOrderPushData `json:"data"`
 }
 

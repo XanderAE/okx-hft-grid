@@ -81,9 +81,9 @@ func (m *mockOrderBook) RequestResync(_ string) error {
 
 // mockStrategyEngine implements strategy.StrategyEngine.
 type mockStrategyEngine struct {
-	mu           sync.Mutex
+	mu            sync.Mutex
 	marketUpdates int
-	fills        int
+	fills         int
 }
 
 func newMockStrategyEngine() *mockStrategyEngine {
@@ -91,8 +91,8 @@ func newMockStrategyEngine() *mockStrategyEngine {
 }
 
 func (m *mockStrategyEngine) LoadStrategy(_ strategy.StrategyConfig) error { return nil }
-func (m *mockStrategyEngine) StartStrategy(_ string) error                { return nil }
-func (m *mockStrategyEngine) StopStrategy(_ string) error                 { return nil }
+func (m *mockStrategyEngine) StartStrategy(_ string) error                 { return nil }
+func (m *mockStrategyEngine) StopStrategy(_ string) error                  { return nil }
 
 func (m *mockStrategyEngine) OnMarketUpdate(_ string, _ *models.TickData) {
 	m.mu.Lock()
@@ -193,7 +193,7 @@ func (m *mockRiskManager) PositionUpdateCount() int {
 
 // mockExecutionEngine implements execution.OrderExecutionEngine.
 type mockExecutionEngine struct {
-	mu          sync.Mutex
+	mu           sync.Mutex
 	ordersPlaced int
 }
 
@@ -399,13 +399,13 @@ func TestEventLoop_FillFlow(t *testing.T) {
 
 	// Dispatch a fill event through the dispatcher.
 	fill := models.FillEvent{
-		OrderID:   "order-1",
-		Symbol:    "ETH-USDT",
-		Side:      models.SideBuy,
-		Price:     decimal.NewFromFloat(3000.0),
-		Quantity:  decimal.NewFromFloat(1.0),
-		Fee:       decimal.NewFromFloat(0.3),
-		Timestamp: time.Now(),
+		OrderID:    "order-1",
+		Symbol:     "ETH-USDT",
+		Side:       models.SideBuy,
+		Price:      decimal.NewFromFloat(3000.0),
+		Quantity:   decimal.NewFromFloat(1.0),
+		Fee:        decimal.NewFromFloat(0.3),
+		Timestamp:  time.Now(),
 		StrategyID: "grid-1",
 	}
 
@@ -529,10 +529,10 @@ func (r *rejectingRiskManager) CheckOrder(_ *risk.OrderRequest) *risk.RiskDecisi
 func (r *rejectingRiskManager) CheckBatchOrders(_ []*risk.OrderRequest) *risk.RiskDecision {
 	return &risk.RiskDecision{Approved: false, Reasons: []string{"position limit exceeded"}}
 }
-func (r *rejectingRiskManager) UpdatePosition(_ string, _ *models.Position)     {}
-func (r *rejectingRiskManager) UpdatePnL(_ string, _ decimal.Decimal)           {}
-func (r *rejectingRiskManager) GetRiskMetrics() *risk.RiskMetrics               { return &risk.RiskMetrics{} }
-func (r *rejectingRiskManager) SetRiskLimits(_ *models.RiskLimits)              {}
-func (r *rejectingRiskManager) EmergencyStop(_ string)                          {}
-func (r *rejectingRiskManager) ResumeFromEmergencyStop() error                  { return nil }
-func (r *rejectingRiskManager) IsEmergencyStopActive() bool                     { return false }
+func (r *rejectingRiskManager) UpdatePosition(_ string, _ *models.Position) {}
+func (r *rejectingRiskManager) UpdatePnL(_ string, _ decimal.Decimal)       {}
+func (r *rejectingRiskManager) GetRiskMetrics() *risk.RiskMetrics           { return &risk.RiskMetrics{} }
+func (r *rejectingRiskManager) SetRiskLimits(_ *models.RiskLimits)          {}
+func (r *rejectingRiskManager) EmergencyStop(_ string)                      {}
+func (r *rejectingRiskManager) ResumeFromEmergencyStop() error              { return nil }
+func (r *rejectingRiskManager) IsEmergencyStopActive() bool                 { return false }

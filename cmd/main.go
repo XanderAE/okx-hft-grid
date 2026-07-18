@@ -113,10 +113,10 @@ type application struct {
 	scheduler *strategy.Scheduler
 
 	// Execution - new components
-	gateway       *execution.OKXGateway
-	rulesProvider *execution.InstrumentRulesCache
+	gateway        *execution.OKXGateway
+	rulesProvider  *execution.InstrumentRulesCache
 	reconcileCoord *execution.ReconciliationCoordinator
-	rebalancers   map[string]*execution.Rebalancer
+	rebalancers    map[string]*execution.Rebalancer
 
 	// Legacy compat
 	fillHandler *execution.GridFillHandler
@@ -156,12 +156,25 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 	// 5.3 RateLimiter (token bucket)
 	app.rateLimiter = ratelimiter.NewTokenBucketLimiter(ratelimiter.DefaultEndpointConfigs())
 
-	// 5.4 APIClient (execution)
-	restURL := cfg.RESTURL
-	if restURL == "" {
-		restURL = "https://www.okx.com"
+	// 5.4 Resolve role-labelled network endpoints
+	resolved, resolveErr := config.ResolveNetworkEndpoints(cfg)
+	if resolveErr != nil {
+		return nil, fmt.Errorf("endpoint resolution failed: %w", resolveErr)
 	}
-	app.apiClient = execution.NewAPIClient(restURL, creds, app.rateLimiter)
+
+	// 5.4a APIClient (execution) — production uses explicit guard; all others use default
+	if cfg.ExecutionMode == config.ExecutionModeProduction {
+		guard, guardErr := config.NewProductionNetworkGuard(cfg)
+		if guardErr != nil {
+			return nil, fmt.Errorf("production network guard creation failed: %w", guardErr)
+		}
+		if err := guard.ValidateEndpoint(resolved.RESTBaseURL); err != nil {
+			return nil, fmt.Errorf("production REST endpoint validation failed: %w", err)
+		}
+		app.apiClient = execution.NewAPIClientWithEndpointGuard(resolved.RESTBaseURL, creds, app.rateLimiter, guard)
+	} else {
+		app.apiClient = execution.NewAPIClient(resolved.RESTBaseURL, creds, app.rateLimiter)
+	}
 
 	// 5.5 OrderManager
 	app.orderMgr = execution.NewOrderManager()
@@ -198,22 +211,15 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 	alertChannels := buildAlertChannels(cfg)
 	app.alerter = monitor.NewAlerter(alertChannels, app.logger)
 
-	// 5.13 WSClient (market data)
-	wsURL := cfg.WebSocketURL
-	if wsURL == "" {
-		wsURL = marketdata.DefaultWebSocketURL
-	}
+	// 5.13 WSClient (market data) — public endpoint from resolved values
 	wsConfig := marketdata.DefaultWSClientConfig()
-	wsConfig.URL = wsURL
+	wsConfig.URL = resolved.PublicWebSocketURL
 	wsConfig.Symbols = cfg.Symbols
 	app.wsClient = marketdata.NewWSClient(wsConfig)
 
-	// 5.14 PrivateWSClient (for order fills)
+	// 5.14 PrivateWSClient (for order fills) — private endpoint from resolved values
 	privateWSConfig := marketdata.DefaultPrivateWSClientConfig()
-	if cfg.WebSocketURL != "" {
-		// Allow test/configuration to override Private_WS URL to loopback
-		privateWSConfig.URL = cfg.WebSocketURL
-	}
+	privateWSConfig.URL = resolved.PrivateWebSocketURL
 	app.privateWS = marketdata.NewPrivateWSClient(privateWSConfig, creds)
 
 	// 5.15 Parser (for tick validation)
@@ -1026,10 +1032,10 @@ func (app *application) placeInitialGridOrders() {
 		}
 
 		app.logger.LogInfo("initial grid orders placed", map[string]string{
-			"symbol":       gridCfg.Symbol,
-			"strategy_id":  strategyID,
-			"placed":       fmt.Sprintf("%d", placed),
-			"failed":       fmt.Sprintf("%d", failed),
+			"symbol":      gridCfg.Symbol,
+			"strategy_id": strategyID,
+			"placed":      fmt.Sprintf("%d", placed),
+			"failed":      fmt.Sprintf("%d", failed),
 		})
 	}
 }

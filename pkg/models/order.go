@@ -6,15 +6,15 @@ import "github.com/shopspring/decimal"
 type OrderStatus int
 
 const (
-	OrderStatusPending        OrderStatus = iota // 等待提交
-	OrderStatusSubmitted                         // 已提交
-	OrderStatusOpen                              // 已挂单
-	OrderStatusPartiallyFilled                   // 部分成交
-	OrderStatusFilled                            // 完全成交
-	OrderStatusCancelled                         // 已撤销
-	OrderStatusRejected                          // 被拒绝
-	OrderStatusExpired                           // 已过期
-	OrderStatusError                             // 错误状态
+	OrderStatusPending         OrderStatus = iota // 等待提交
+	OrderStatusSubmitted                          // 已提交
+	OrderStatusOpen                               // 已挂单
+	OrderStatusPartiallyFilled                    // 部分成交
+	OrderStatusFilled                             // 完全成交
+	OrderStatusCancelled                          // 已撤销
+	OrderStatusRejected                           // 被拒绝
+	OrderStatusExpired                            // 已过期
+	OrderStatusError                              // 错误状态
 )
 
 // String returns the string representation of OrderStatus.

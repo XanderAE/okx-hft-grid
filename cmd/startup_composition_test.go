@@ -22,8 +22,8 @@ import (
 
 // startupTestSimulator provides an in-memory OKX loopback simulator for startup tests.
 type startupTestSimulator struct {
-	t      *testing.T
-	server *httptest.Server
+	t        *testing.T
+	server   *httptest.Server
 	wsServer *httptest.Server
 
 	mu              sync.Mutex
@@ -35,7 +35,7 @@ type startupTestSimulator struct {
 	instrumentRules map[string]map[string]string
 
 	// Tracking
-	ordersPlaced  int32
+	ordersPlaced    int32
 	ordersCancelled int32
 }
 
@@ -55,6 +55,14 @@ func newStartupTestSimulator(t *testing.T) *startupTestSimulator {
 }
 
 func (s *startupTestSimulator) wsURL() string {
+	return "ws://" + s.wsServer.Listener.Addr().String() + "/ws/v5/private"
+}
+
+func (s *startupTestSimulator) publicWSURL() string {
+	return "ws://" + s.wsServer.Listener.Addr().String() + "/ws/v5/public"
+}
+
+func (s *startupTestSimulator) privateWSURL() string {
 	return "ws://" + s.wsServer.Listener.Addr().String() + "/ws/v5/private"
 }
 
@@ -164,9 +172,10 @@ func TestStartupOrder(t *testing.T) {
 			{Symbol: "WIF-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(10),
 				LowerPrice: decimal.NewFromFloat(2.30), UpperPrice: decimal.NewFromFloat(2.70), GridType: models.GridTypeArithmetic},
 		},
-		RESTURL:        sim.server.URL,
-		WebSocketURL:   sim.wsURL(),
-		TradingEnabled: true,
+		RESTURL:             sim.server.URL,
+		WebSocketURL:        sim.publicWSURL(),
+		PrivateWebSocketURL: sim.privateWSURL(),
+		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
 			MinHalfWidth: decimal.NewFromFloat(0.015),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
@@ -224,9 +233,10 @@ func TestNoRiskBeforeReady(t *testing.T) {
 			{Symbol: "DOGE-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(100),
 				LowerPrice: decimal.NewFromFloat(0.14), UpperPrice: decimal.NewFromFloat(0.16), GridType: models.GridTypeArithmetic},
 		},
-		RESTURL:        sim.server.URL,
-		WebSocketURL:   sim.wsURL(),
-		TradingEnabled: true,
+		RESTURL:             sim.server.URL,
+		WebSocketURL:        sim.publicWSURL(),
+		PrivateWebSocketURL: sim.privateWSURL(),
+		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
 			MinHalfWidth: decimal.NewFromFloat(0.015),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
@@ -284,9 +294,10 @@ func TestRecoveryBeforeInitialGrid(t *testing.T) {
 			{Symbol: "DOGE-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(100),
 				LowerPrice: decimal.NewFromFloat(0.14), UpperPrice: decimal.NewFromFloat(0.16), GridType: models.GridTypeArithmetic},
 		},
-		RESTURL:        sim.server.URL,
-		WebSocketURL:   sim.wsURL(),
-		TradingEnabled: true,
+		RESTURL:             sim.server.URL,
+		WebSocketURL:        sim.publicWSURL(),
+		PrivateWebSocketURL: sim.privateWSURL(),
+		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
 			MinHalfWidth: decimal.NewFromFloat(0.015),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
@@ -392,11 +403,12 @@ func TestOwnedCleanupOnly(t *testing.T) {
 	cfg := &config.SystemConfig{
 		Symbols:         []string{"DOGE-USDT"},
 		PersistencePath: dbPath,
-		GridConfigs:     []models.GridConfig{{Symbol: "DOGE-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(100),
+		GridConfigs: []models.GridConfig{{Symbol: "DOGE-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(100),
 			LowerPrice: decimal.NewFromFloat(0.14), UpperPrice: decimal.NewFromFloat(0.16), GridType: models.GridTypeArithmetic}},
-		RESTURL:        server.URL,
-		WebSocketURL:   wsURL,
-		TradingEnabled: false, // reconcile-only to isolate cleanup
+		RESTURL:             server.URL,
+		WebSocketURL:        wsURL,
+		PrivateWebSocketURL: wsURL,
+		TradingEnabled:      false, // reconcile-only to isolate cleanup
 		AdaptiveRange: config.AdaptiveRangeConfig{
 			MinHalfWidth: decimal.NewFromFloat(0.015),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),
@@ -507,9 +519,10 @@ func TestProductionComposition(t *testing.T) {
 			{Symbol: "WIF-USDT", GridCount: 5, OrderSize: decimal.NewFromInt(10),
 				LowerPrice: decimal.NewFromFloat(2.30), UpperPrice: decimal.NewFromFloat(2.70), GridType: models.GridTypeArithmetic},
 		},
-		RESTURL:        sim.server.URL,
-		WebSocketURL:   sim.wsURL(),
-		TradingEnabled: true,
+		RESTURL:             sim.server.URL,
+		WebSocketURL:        sim.publicWSURL(),
+		PrivateWebSocketURL: sim.privateWSURL(),
+		TradingEnabled:      true,
 		AdaptiveRange: config.AdaptiveRangeConfig{
 			MinHalfWidth: decimal.NewFromFloat(0.015),
 			MaxHalfWidth: decimal.NewFromFloat(0.04),

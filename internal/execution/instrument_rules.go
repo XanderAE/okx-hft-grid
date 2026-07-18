@@ -207,12 +207,12 @@ func NormalizeOrder(candidate NormalizedOrderRequest, rules models.InstrumentRul
 
 // OKXInstrumentData represents one item from the /api/v5/public/instruments response.
 type OKXInstrumentData struct {
-	InstID      string `json:"instId"`
-	TickSz      string `json:"tickSz"`
-	LotSz       string `json:"lotSz"`
-	MinSz       string `json:"minSz"`
-	InstType    string `json:"instType"`
-	State       string `json:"state"`
+	InstID   string `json:"instId"`
+	TickSz   string `json:"tickSz"`
+	LotSz    string `json:"lotSz"`
+	MinSz    string `json:"minSz"`
+	InstType string `json:"instType"`
+	State    string `json:"state"`
 }
 
 // ParseInstrumentRules converts raw OKX instrument data into validated rules.

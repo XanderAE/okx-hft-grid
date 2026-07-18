@@ -177,7 +177,6 @@ func (e *GridDriftEngine) computeNewRange(direction models.DriftDirection) (newL
 	return newLower, newUpper
 }
 
-
 // cancelStaleOrders cancels orders at levels that are no longer in the new range.
 // It compares the current state.Levels with newLevels to identify stale levels,
 // then cancels each stale order via execEngine.CancelOrder with up to 3 retries.
@@ -429,9 +428,9 @@ func (e *GridDriftEngine) OnPriceUpdate(currentPrice decimal.Decimal) bool {
 			if e.logger != nil {
 				remaining := e.driftConfig.CooldownPeriod - time.Since(e.lastDriftTime)
 				e.logger.LogInfo("drift suppressed: cooldown active", map[string]string{
-					"direction":       direction.String(),
+					"direction":         direction.String(),
 					"remainingCooldown": remaining.String(),
-					"price":           currentPrice.String(),
+					"price":             currentPrice.String(),
 				})
 			}
 			return false

@@ -17,13 +17,13 @@ const (
 )
 
 var (
-	ErrInvalidFillLevel    = errors.New("fill grid level is out of range")
-	ErrInvalidFillSide     = errors.New("fill side must be BUY or SELL")
-	ErrNoLevelsConfigured  = errors.New("grid state has no levels configured")
-	ErrNilState            = errors.New("grid state is nil")
-	ErrNilConfig           = errors.New("grid config is nil")
-	ErrNegativeFeeRate     = errors.New("fee rate must be non-negative")
-	ErrInvalidMaxPosition  = errors.New("max position must be positive")
+	ErrInvalidFillLevel   = errors.New("fill grid level is out of range")
+	ErrInvalidFillSide    = errors.New("fill side must be BUY or SELL")
+	ErrNoLevelsConfigured = errors.New("grid state has no levels configured")
+	ErrNilState           = errors.New("grid state is nil")
+	ErrNilConfig          = errors.New("grid config is nil")
+	ErrNegativeFeeRate    = errors.New("fee rate must be non-negative")
+	ErrInvalidMaxPosition = errors.New("max position must be positive")
 )
 
 // GridState tracks the runtime state of a grid trading strategy.
@@ -38,11 +38,11 @@ type GridState struct {
 
 // GridFillResult contains the result of processing a grid fill event.
 type GridFillResult struct {
-	CounterOrder          *models.Order   // Counter order to place (nil if none)
-	RealizedPnL           decimal.Decimal // Updated realized PnL after this fill
-	NeedsManualIntervention bool          // True if placement failed after retries
-	Error                 error           // Error if any
-	Reason                string          // Reason for skipping counter order or requiring intervention
+	CounterOrder            *models.Order   // Counter order to place (nil if none)
+	RealizedPnL             decimal.Decimal // Updated realized PnL after this fill
+	NeedsManualIntervention bool            // True if placement failed after retries
+	Error                   error           // Error if any
+	Reason                  string          // Reason for skipping counter order or requiring intervention
 }
 
 // OrderPlacer is an interface for placing orders, allowing dependency injection for testing.

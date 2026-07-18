@@ -16,15 +16,15 @@ import (
 
 // Migration errors are deliberately fail-closed: no partial state is published.
 var (
-	ErrStateDirectoryInvalid   = errors.New("migration: state directory path is invalid or non-canonical")
+	ErrStateDirectoryInvalid     = errors.New("migration: state directory path is invalid or non-canonical")
 	ErrStateDirectoryNotWritable = errors.New("migration: state directory is not writable")
-	ErrMigrationConflict       = errors.New("migration: target and legacy both exist with unresolved conflict")
-	ErrMigrationCorrupted      = errors.New("migration: source database is corrupted or unreadable")
-	ErrMigrationPermission     = errors.New("migration: insufficient permissions for migration")
-	ErrEmptyStateNotApproved   = errors.New("migration: empty state requires explicit state_bootstrap_mode: allow-new")
-	ErrMigrationLock           = errors.New("migration: cannot acquire exclusive migration lock")
-	ErrMigrationIntegrity      = errors.New("migration: integrity or schema check failed on migrated database")
-	ErrMigrationTargetExists   = errors.New("migration: target already exists and is valid")
+	ErrMigrationConflict         = errors.New("migration: target and legacy both exist with unresolved conflict")
+	ErrMigrationCorrupted        = errors.New("migration: source database is corrupted or unreadable")
+	ErrMigrationPermission       = errors.New("migration: insufficient permissions for migration")
+	ErrEmptyStateNotApproved     = errors.New("migration: empty state requires explicit state_bootstrap_mode: allow-new")
+	ErrMigrationLock             = errors.New("migration: cannot acquire exclusive migration lock")
+	ErrMigrationIntegrity        = errors.New("migration: integrity or schema check failed on migrated database")
+	ErrMigrationTargetExists     = errors.New("migration: target already exists and is valid")
 )
 
 // MigrationConfig holds parameters for the legacy state migration.

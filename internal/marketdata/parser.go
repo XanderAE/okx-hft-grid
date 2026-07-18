@@ -42,15 +42,15 @@ type OKXTickerArg struct {
 
 // OKXTickerData represents a single ticker data entry from OKX.
 type OKXTickerData struct {
-	InstID    string `json:"instId"`
-	Last      string `json:"last"`
-	BidPx     string `json:"bidPx"`
-	AskPx     string `json:"askPx"`
-	BidSz     string `json:"bidSz"`
-	AskSz     string `json:"askSz"`
-	Vol24h    string `json:"vol24h"`
-	Ts        string `json:"ts"`
-	SeqId     int64  `json:"seqId"`
+	InstID string `json:"instId"`
+	Last   string `json:"last"`
+	BidPx  string `json:"bidPx"`
+	AskPx  string `json:"askPx"`
+	BidSz  string `json:"bidSz"`
+	AskSz  string `json:"askSz"`
+	Vol24h string `json:"vol24h"`
+	Ts     string `json:"ts"`
+	SeqId  int64  `json:"seqId"`
 }
 
 // DataInvalidCallback is a function called when tick data fails validation.

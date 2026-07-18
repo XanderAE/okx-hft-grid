@@ -62,17 +62,17 @@ type CancelAttemptResult struct {
 
 // ExchangeOrderInfo is the structured order state from a query.
 type ExchangeOrderInfo struct {
-	ExchangeOrderID    string
-	ClientOrderID      string
-	Symbol             string
-	Side               models.Side
-	Status             models.OrderStatus
-	Price              decimal.Decimal
-	Quantity           decimal.Decimal
-	CumulativeFillQty  decimal.Decimal
-	AvgFillPrice       decimal.Decimal
-	CreateTime         time.Time
-	UpdateTime         time.Time
+	ExchangeOrderID   string
+	ClientOrderID     string
+	Symbol            string
+	Side              models.Side
+	Status            models.OrderStatus
+	Price             decimal.Decimal
+	Quantity          decimal.Decimal
+	CumulativeFillQty decimal.Decimal
+	AvgFillPrice      decimal.Decimal
+	CreateTime        time.Time
+	UpdateTime        time.Time
 }
 
 // OrderRef identifies an order for query/cancel by exchange ID or client order ID.
@@ -506,11 +506,11 @@ func (g *OKXGateway) GetTicker(ctx context.Context, symbol string) (TickerObserv
 		Code string `json:"code"`
 		Msg  string `json:"msg"`
 		Data []struct {
-			InstID  string `json:"instId"`
-			Last    string `json:"last"`
-			BidPx   string `json:"bidPx"`
-			AskPx   string `json:"askPx"`
-			Ts      string `json:"ts"`
+			InstID string `json:"instId"`
+			Last   string `json:"last"`
+			BidPx  string `json:"bidPx"`
+			AskPx  string `json:"askPx"`
+			Ts     string `json:"ts"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(bodyBytes, &raw); err != nil {

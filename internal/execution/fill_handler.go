@@ -242,4 +242,3 @@ func roundPriceForSymbol(price decimal.Decimal, symbol string) decimal.Decimal {
 func (h *GridFillHandler) UpdateGridLevels(symbol string, levels []decimal.Decimal) {
 	h.gridLevels[symbol] = levels
 }
-

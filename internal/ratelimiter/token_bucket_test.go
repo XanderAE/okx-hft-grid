@@ -128,6 +128,7 @@ func TestTryAcquire_Timeout(t *testing.T) {
 		{Endpoint: "slow", MaxTokens: 1, RefillRate: 1, RefillInterval: 100 * time.Second},
 	}
 	tb := NewTokenBucketLimiter(configs)
+	tb.sleepFunc = func(d time.Duration) {} // no-op: simulated clock advances via nowFunc
 
 	// Use a fake clock that advances on each call to simulate time passing
 	// past the deadline without real sleeps.

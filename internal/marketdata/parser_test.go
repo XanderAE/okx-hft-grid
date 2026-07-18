@@ -488,5 +488,3 @@ func TestResetSequenceId(t *testing.T) {
 		t.Fatalf("after reset, lower seqId should pass: %v", err)
 	}
 }
-
-

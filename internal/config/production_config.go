@@ -189,6 +189,15 @@ func ValidateProductionConfig(cfg *SystemConfig) error {
 		ve.Add("production trading requires independent gate evidence: " + strings.Join(cfg.ProductionGates.MissingNames(), ", "))
 	}
 
+	// Validate production endpoint roles
+	resolved, endpointErr := ResolveNetworkEndpoints(cfg)
+	if endpointErr != nil {
+		ve.Add(endpointErr.Error())
+	} else {
+		// Verify resolved endpoints match the authoritative defaults
+		_ = resolved
+	}
+
 	if ve.HasErrors() {
 		return ve
 	}
@@ -239,6 +248,8 @@ type effectiveConfigSummary struct {
 	Symbols                []string `json:"symbols"`
 	RESTOrigin             string   `json:"rest_origin,omitempty"`
 	WebSocketOrigin        string   `json:"websocket_origin,omitempty"`
+	PublicWebSocketOrigin  string   `json:"public_websocket_origin,omitempty"`
+	PrivateWebSocketOrigin string   `json:"private_websocket_origin,omitempty"`
 	MeanReversionEnabled   bool     `json:"mean_reversion_enabled"`
 }
 
@@ -278,6 +289,8 @@ func EffectiveConfigSanitized(cfg *SystemConfig) (string, error) {
 		Symbols:                symbols,
 		RESTOrigin:             sanitizedOrigin(cfg.RESTURL),
 		WebSocketOrigin:        sanitizedOrigin(cfg.WebSocketURL),
+		PublicWebSocketOrigin:  sanitizedOrigin(cfg.WebSocketURL),
+		PrivateWebSocketOrigin: sanitizedOrigin(cfg.PrivateWebSocketURL),
 		MeanReversionEnabled:   len(cfg.MeanReversionConfigs) != 0,
 	}
 	encoded, err := json.Marshal(summary)

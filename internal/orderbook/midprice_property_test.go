@@ -205,9 +205,9 @@ func TestProperty_OrderBook_MidPriceAndSpreadPrecision(t *testing.T) {
 		}
 
 		snapshot := &OrderBookSnapshot{
-			Symbol: "TEST-USDT",
-			Bids:   []PriceLevel{{Price: bestBid, Quantity: decimal.NewFromInt(1)}},
-			Asks:   []PriceLevel{{Price: bestAsk, Quantity: decimal.NewFromInt(1)}},
+			Symbol:     "TEST-USDT",
+			Bids:       []PriceLevel{{Price: bestBid, Quantity: decimal.NewFromInt(1)}},
+			Asks:       []PriceLevel{{Price: bestAsk, Quantity: decimal.NewFromInt(1)}},
 			SequenceID: 1,
 			Timestamp:  1000,
 		}
@@ -311,9 +311,9 @@ func TestProperty_OrderBook_MidPriceBetweenBidAndAsk(t *testing.T) {
 		}
 
 		snapshot := &OrderBookSnapshot{
-			Symbol: "TEST-USDT",
-			Bids:   []PriceLevel{{Price: bestBid, Quantity: decimal.NewFromInt(1)}},
-			Asks:   []PriceLevel{{Price: bestAsk, Quantity: decimal.NewFromInt(1)}},
+			Symbol:     "TEST-USDT",
+			Bids:       []PriceLevel{{Price: bestBid, Quantity: decimal.NewFromInt(1)}},
+			Asks:       []PriceLevel{{Price: bestAsk, Quantity: decimal.NewFromInt(1)}},
 			SequenceID: 1,
 			Timestamp:  1000,
 		}

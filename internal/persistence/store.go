@@ -170,8 +170,8 @@ func (s *SQLiteStore) LoadOrders() ([]*models.Order, error) {
 	for rows.Next() {
 		var (
 			orderID, exchangeOrderID, symbol, priceStr, qtyStr, filledQtyStr, strategyID string
-			side, status                                                                   int
-			createdAt, updatedAt                                                           int64
+			side, status                                                                 int
+			createdAt, updatedAt                                                         int64
 		)
 		if err := rows.Scan(&orderID, &exchangeOrderID, &symbol, &side, &priceStr, &qtyStr, &filledQtyStr, &status, &strategyID, &createdAt, &updatedAt); err != nil {
 			return nil, fmt.Errorf("%w: failed to scan order row: %v", ErrCorrupted, err)
@@ -260,7 +260,7 @@ func (s *SQLiteStore) LoadPositions() ([]*models.Position, error) {
 	for rows.Next() {
 		var (
 			symbol, qtyStr, avgPriceStr, unrealizedStr, realizedStr string
-			side                                                     int
+			side                                                    int
 		)
 		if err := rows.Scan(&symbol, &side, &qtyStr, &avgPriceStr, &unrealizedStr, &realizedStr); err != nil {
 			return nil, fmt.Errorf("%w: failed to scan position row: %v", ErrCorrupted, err)

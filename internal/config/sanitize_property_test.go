@@ -19,7 +19,7 @@ import (
 func TestProperty_APIKeyValueIsRemoved(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(16, 64).Draw(t, "valueLen")
-		value := rapid.StringMatching("[a-zA-Z0-9]{" + itoa(valueLen) + "}").Draw(t, "value")
+		value := rapid.StringMatching("[a-zA-Z0-9]{"+itoa(valueLen)+"}").Draw(t, "value")
 
 		prefix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "prefix")
 		suffix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "suffix")
@@ -38,7 +38,7 @@ func TestProperty_APIKeyValueIsRemoved(t *testing.T) {
 func TestProperty_SecretKeyValueIsRemoved(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(16, 64).Draw(t, "valueLen")
-		value := rapid.StringMatching("[a-zA-Z0-9]{" + itoa(valueLen) + "}").Draw(t, "value")
+		value := rapid.StringMatching("[a-zA-Z0-9]{"+itoa(valueLen)+"}").Draw(t, "value")
 
 		prefix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "prefix")
 		suffix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "suffix")
@@ -57,7 +57,7 @@ func TestProperty_SecretKeyValueIsRemoved(t *testing.T) {
 func TestProperty_PassphraseValueIsRemoved(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(16, 64).Draw(t, "valueLen")
-		value := rapid.StringMatching("[a-zA-Z0-9]{" + itoa(valueLen) + "}").Draw(t, "value")
+		value := rapid.StringMatching("[a-zA-Z0-9]{"+itoa(valueLen)+"}").Draw(t, "value")
 
 		prefix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "prefix")
 		suffix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "suffix")
@@ -76,7 +76,7 @@ func TestProperty_PassphraseValueIsRemoved(t *testing.T) {
 func TestProperty_HexStringIsRemoved(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		hexLen := rapid.IntRange(32, 64).Draw(t, "hexLen")
-		hexStr := rapid.StringMatching("[0-9a-f]{" + itoa(hexLen) + "}").Draw(t, "hexStr")
+		hexStr := rapid.StringMatching("[0-9a-f]{"+itoa(hexLen)+"}").Draw(t, "hexStr")
 
 		prefix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "prefix")
 		suffix := rapid.StringMatching("[a-z ]{0,20}").Draw(t, "suffix")
@@ -99,7 +99,7 @@ func TestProperty_NonCredentialTextUnchanged(t *testing.T) {
 		for i := range words {
 			// Only lowercase letters, max 10 chars (well below 24/32 thresholds)
 			wordLen := rapid.IntRange(1, 10).Draw(t, "wordLen")
-			words[i] = rapid.StringMatching("[a-z]{" + itoa(wordLen) + "}").Draw(t, "word")
+			words[i] = rapid.StringMatching("[a-z]{"+itoa(wordLen)+"}").Draw(t, "word")
 		}
 		input := strings.Join(words, " ")
 
@@ -117,7 +117,7 @@ func TestProperty_NonCredentialTextUnchanged(t *testing.T) {
 func TestProperty_MaskIsExactly8Asterisks(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(16, 64).Draw(t, "valueLen")
-		value := rapid.StringMatching("[a-zA-Z0-9]{" + itoa(valueLen) + "}").Draw(t, "value")
+		value := rapid.StringMatching("[a-zA-Z0-9]{"+itoa(valueLen)+"}").Draw(t, "value")
 
 		keyName := rapid.SampledFrom([]string{"api_key", "secret_key", "passphrase", "token"}).Draw(t, "keyName")
 		input := keyName + "=" + value
@@ -142,7 +142,7 @@ func TestProperty_MaskIsExactly8Asterisks(t *testing.T) {
 func TestProperty_SecretAtVariousPositions(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(32, 48).Draw(t, "valueLen")
-		secret := rapid.StringMatching("[0-9a-f]{" + itoa(valueLen) + "}").Draw(t, "secret")
+		secret := rapid.StringMatching("[0-9a-f]{"+itoa(valueLen)+"}").Draw(t, "secret")
 
 		position := rapid.SampledFrom([]string{"beginning", "middle", "end"}).Draw(t, "position")
 
@@ -174,8 +174,8 @@ func TestProperty_MultipleSecretsAllSanitized(t *testing.T) {
 		// Generate two distinct secrets
 		len1 := rapid.IntRange(32, 48).Draw(t, "len1")
 		len2 := rapid.IntRange(32, 48).Draw(t, "len2")
-		secret1 := rapid.StringMatching("[0-9a-f]{" + itoa(len1) + "}").Draw(t, "secret1")
-		secret2 := rapid.StringMatching("[0-9a-f]{" + itoa(len2) + "}").Draw(t, "secret2")
+		secret1 := rapid.StringMatching("[0-9a-f]{"+itoa(len1)+"}").Draw(t, "secret1")
+		secret2 := rapid.StringMatching("[0-9a-f]{"+itoa(len2)+"}").Draw(t, "secret2")
 
 		input := "first=" + secret1 + " second=" + secret2 + " end"
 		result := SanitizeLog(input)
@@ -194,7 +194,7 @@ func TestProperty_MultipleSecretsAllSanitized(t *testing.T) {
 func TestProperty_CredentialKeyVariants(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		valueLen := rapid.IntRange(16, 48).Draw(t, "valueLen")
-		value := rapid.StringMatching("[a-zA-Z0-9]{" + itoa(valueLen) + "}").Draw(t, "value")
+		value := rapid.StringMatching("[a-zA-Z0-9]{"+itoa(valueLen)+"}").Draw(t, "value")
 
 		keyName := rapid.SampledFrom([]string{
 			"api_key", "api-key", "apikey",

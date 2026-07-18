@@ -112,44 +112,44 @@ type WSClient struct {
 	config WSClientConfig
 
 	// Connection state
-	conn            *websocket.Conn
-	state           ConnectionState
-	stateMu         sync.RWMutex
-	lastPong        time.Time
-	lastPongMu      sync.RWMutex
+	conn       *websocket.Conn
+	state      ConnectionState
+	stateMu    sync.RWMutex
+	lastPong   time.Time
+	lastPongMu sync.RWMutex
 
 	// Data staleness
-	staleSymbols    map[string]bool
-	staleMu         sync.RWMutex
+	staleSymbols map[string]bool
+	staleMu      sync.RWMutex
 
 	// Subscriptions
-	subscriptions   map[string][]string // symbol -> channels
-	subMu           sync.RWMutex
+	subscriptions map[string][]string // symbol -> channels
+	subMu         sync.RWMutex
 
 	// Sequence tracking
-	lastSeqID       map[string]int64 // symbol -> last sequenceId
-	seqMu           sync.RWMutex
+	lastSeqID map[string]int64 // symbol -> last sequenceId
+	seqMu     sync.RWMutex
 
 	// Callbacks
-	callbacks       map[models.EventType][]models.MarketEventCallback
-	callbackMu      sync.RWMutex
+	callbacks  map[models.EventType][]models.MarketEventCallback
+	callbackMu sync.RWMutex
 
 	// External notifiers
-	orderPauser     OrderPauseNotifier
-	snapshotReq     SnapshotRequester
+	orderPauser OrderPauseNotifier
+	snapshotReq SnapshotRequester
 
 	// Message handler (for raw messages, useful for parser integration)
-	msgHandler      func(messageType int, data []byte)
+	msgHandler func(messageType int, data []byte)
 
 	// Control
-	done            chan struct{}
-	reconnectCh     chan struct{}
-	writeMu         sync.Mutex
-	wg              sync.WaitGroup
+	done        chan struct{}
+	reconnectCh chan struct{}
+	writeMu     sync.Mutex
+	wg          sync.WaitGroup
 
 	// Reconnection state
-	reconnectCount  int
-	reconnectMu     sync.Mutex
+	reconnectCount int
+	reconnectMu    sync.Mutex
 }
 
 // NewWSClient creates a new WebSocket client with the given configuration.

@@ -199,9 +199,9 @@ func TestJournaldFirstAlert(t *testing.T) {
 	// Regardless of external success or failure, journal evidence must exist.
 
 	for _, tc := range []struct {
-		name         string
-		channelFail  bool
-		hasChannels  bool
+		name        string
+		channelFail bool
+		hasChannels bool
 	}{
 		{"external_success", false, true},
 		{"external_failure", true, true},
@@ -319,7 +319,7 @@ func TestFillToTerminalCorrelation(t *testing.T) {
 		"symbol":         symbol,
 		"correlation_id": correlationID,
 		"quantity":       "100",
-		"price":         "0.45",
+		"price":          "0.45",
 	})
 
 	// 3. Counter_SELL confirmed

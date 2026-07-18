@@ -16,6 +16,7 @@ func validProductionConfigForTest() *SystemConfig {
 		Symbols:              []string{"DOGE-USDT", "WIF-USDT"},
 		MeanReversionConfigs: []models.MeanReversionConfig{},
 		WebSocketURL:         "wss://ws.okx.com:8443/ws/v5/public",
+		PrivateWebSocketURL:  "wss://ws.okx.com:8443/ws/v5/private",
 		RESTURL:              "https://www.okx.com",
 		ReconcileIntervalSec: 30,
 		PersistencePath:      ApprovedStatePath,
@@ -191,16 +192,16 @@ func TestEffectiveConfigSanitized(t *testing.T) {
 		SingaporeIPAllowlist: "ip-sensitive-evidence",
 		HumanTradingApproval: "human-sensitive-evidence",
 	}
-	cfg.RESTURL = "https://api-user:api-password@www.okx.com/private?token=query-secret"
-	cfg.WebSocketURL = "wss://ws-user:ws-password@ws.okx.com:8443/ws/v5/public?signature=secret"
+	cfg.PrivateWebSocketURL = DefaultPrivateWebSocketURL
 
+	// Use valid production endpoints to pass endpoint validation, then test
+	// that the summary still omits gate evidence values.
 	summary, err := EffectiveConfigSanitized(cfg)
 	if err != nil {
 		t.Fatalf("build effective config summary: %v", err)
 	}
 	for _, secret := range []string{
 		"rotation-sensitive-evidence", "permission-sensitive-evidence", "ip-sensitive-evidence", "human-sensitive-evidence",
-		"api-user", "api-password", "query-secret", "ws-user", "ws-password", "signature=secret",
 	} {
 		if strings.Contains(summary, secret) {
 			t.Fatalf("effective config summary leaked %q: %s", secret, summary)
@@ -209,6 +210,27 @@ func TestEffectiveConfigSanitized(t *testing.T) {
 	for _, expected := range []string{ApprovedProductionLocation, "cash", "20s", "45s", "30s", ApprovedStatePath, "DOGE-USDT", "WIF-USDT", "https://www.okx.com", "wss://ws.okx.com:8443"} {
 		if !strings.Contains(summary, expected) {
 			t.Fatalf("effective config summary missing approved field %q: %s", expected, summary)
+		}
+	}
+
+	// For URL secret-leakage testing, use non-production mode to bypass
+	// production endpoint validation (which correctly rejects userinfo/query).
+	nonProdCfg := *cfg
+	nonProdCfg.ExecutionMode = ExecutionModeUnit
+	nonProdCfg.RESTURL = "https://api-user:api-password@www.okx.com/private?token=query-secret"
+	nonProdCfg.WebSocketURL = "wss://ws-user:ws-password@ws.okx.com:8443/ws/v5/public?signature=secret"
+	nonProdCfg.PrivateWebSocketURL = "wss://priv-key:priv-secret@ws.okx.com:8443/ws/v5/private?auth=hidden"
+
+	summary2, err := EffectiveConfigSanitized(&nonProdCfg)
+	if err != nil {
+		t.Fatalf("non-production sanitized summary: %v", err)
+	}
+	for _, secret := range []string{
+		"api-user", "api-password", "query-secret", "ws-user", "ws-password", "signature=secret",
+		"priv-key", "priv-secret", "auth=hidden",
+	} {
+		if strings.Contains(summary2, secret) {
+			t.Fatalf("effective config summary leaked %q: %s", secret, summary2)
 		}
 	}
 }

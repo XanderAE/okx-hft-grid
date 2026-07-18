@@ -35,14 +35,14 @@ type MetricsServer struct {
 	gridDriftSuppressed prometheus.Counter
 
 	// Production grid stabilization metrics (Task 3.9)
-	serviceUp             prometheus.Gauge
-	healthState           *prometheus.GaugeVec
+	serviceUp              prometheus.Gauge
+	healthState            *prometheus.GaugeVec
 	stateDirectoryWritable prometheus.Gauge
 
 	// Private_WS
-	privateWSState          *prometheus.GaugeVec
-	privateWSLivenessAge    prometheus.Gauge
-	privateWSReconnectTotal prometheus.Counter
+	privateWSState             *prometheus.GaugeVec
+	privateWSLivenessAge       prometheus.Gauge
+	privateWSReconnectTotal    prometheus.Counter
 	privateWSSubscriptionReady prometheus.Gauge
 
 	// Reconciliation
@@ -75,7 +75,7 @@ type MetricsServer struct {
 	safeStopActive *prometheus.GaugeVec
 
 	// Alerts
-	alertAttempts       prometheus.Counter
+	alertAttempts        prometheus.Counter
 	alertDeliveryOutcome *prometheus.CounterVec
 
 	// Internal state for rate calculation
@@ -334,19 +334,19 @@ func NewMetricsServer(port int) *MetricsServer {
 	reg.MustRegister(alertDeliveryOutcome)
 
 	return &MetricsServer{
-		port:                port,
-		registry:            reg,
-		orderLatency:        orderLatency,
-		ordersTotal:         ordersTotal,
-		ordersPerSecond:     ordersPerSecond,
-		errorTotal:          errorTotal,
-		activeStrategies:    activeStrategies,
-		positionValue:       positionValue,
-		dailyPnL:            dailyPnL,
-		gridDriftTotal:      gridDriftTotal,
-		gridDriftLatency:    gridDriftLatency,
-		gridDriftFailure:    gridDriftFailure,
-		gridDriftSuppressed: gridDriftSuppressed,
+		port:                         port,
+		registry:                     reg,
+		orderLatency:                 orderLatency,
+		ordersTotal:                  ordersTotal,
+		ordersPerSecond:              ordersPerSecond,
+		errorTotal:                   errorTotal,
+		activeStrategies:             activeStrategies,
+		positionValue:                positionValue,
+		dailyPnL:                     dailyPnL,
+		gridDriftTotal:               gridDriftTotal,
+		gridDriftLatency:             gridDriftLatency,
+		gridDriftFailure:             gridDriftFailure,
+		gridDriftSuppressed:          gridDriftSuppressed,
 		serviceUp:                    serviceUp,
 		healthState:                  healthState,
 		stateDirectoryWritable:       stateDirectoryWritable,

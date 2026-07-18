@@ -22,10 +22,10 @@ const MaxScheduleJitter = 5 * time.Second
 
 // RebalancerConfig configures the per-symbol rebalancer.
 type RebalancerConfig struct {
-	Interval time.Duration // 30 seconds
-	MaxJitter time.Duration // 5 seconds
+	Interval     time.Duration // 30 seconds
+	MaxJitter    time.Duration // 5 seconds
 	TickerMaxAge time.Duration // 5 seconds
-	Clock func() time.Time
+	Clock        func() time.Time
 }
 
 // DefaultRebalancerConfig returns the design-mandated defaults.
@@ -77,26 +77,26 @@ type RebalancerTradingGate interface {
 type OperationRiskClass = int
 
 const (
-	OpRiskIncreasing        OperationRiskClass = 0
-	OpRiskReducing          OperationRiskClass = 1
-	OpReconciliation        OperationRiskClass = 2
+	OpRiskIncreasing           OperationRiskClass = 0
+	OpRiskReducing             OperationRiskClass = 1
+	OpReconciliation           OperationRiskClass = 2
 	OpConfirmedBuyCancellation OperationRiskClass = 3
 )
 
 // RebalancerCycleResult summarizes one cycle for observability.
 type RebalancerCycleResult struct {
-	Symbol          string
-	StartedAt       time.Time
-	CompletedAt     time.Time
-	RunID           string
-	ReferencePrice  decimal.Decimal
-	ReferenceAge    time.Duration
-	Skipped         bool
-	SkipReason      string
-	StaleCount      int
-	KeptCount       int
-	Outcomes        []models.RebalanceOutcomeRecord
-	Err             error
+	Symbol         string
+	StartedAt      time.Time
+	CompletedAt    time.Time
+	RunID          string
+	ReferencePrice decimal.Decimal
+	ReferenceAge   time.Duration
+	Skipped        bool
+	SkipReason     string
+	StaleCount     int
+	KeptCount      int
+	Outcomes       []models.RebalanceOutcomeRecord
+	Err            error
 }
 
 // Rebalancer implements the per-symbol ownership-safe rebalancer:
@@ -633,5 +633,3 @@ func (r *Rebalancer) persistOutcome(ctx context.Context, outcome models.Rebalanc
 		_ = r.deps.OutcomeStore.PersistRebalanceOutcome(ctx, outcome)
 	}
 }
-
-

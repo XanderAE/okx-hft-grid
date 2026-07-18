@@ -13,7 +13,7 @@ type fakeClock struct {
 	now time.Time
 }
 
-func (c *fakeClock) Now() time.Time { return c.now }
+func (c *fakeClock) Now() time.Time          { return c.now }
 func (c *fakeClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
 
 func testObservation(symbol, orderID, fillID string, cumQty decimal.Decimal, observedAt time.Time) models.FillObservation {
@@ -92,12 +92,12 @@ func TestFillIdentity_UniqueKey(t *testing.T) {
 
 func TestCumulativeDelta_Basic(t *testing.T) {
 	tests := []struct {
-		name     string
-		prev     decimal.Decimal
-		obs      decimal.Decimal
-		wantNew  bool
+		name      string
+		prev      decimal.Decimal
+		obs       decimal.Decimal
+		wantNew   bool
 		wantDelta decimal.Decimal
-		wantErr  bool
+		wantErr   bool
 	}{
 		{"new fill", decimal.Zero, decimal.NewFromInt(100), true, decimal.NewFromInt(100), false},
 		{"increment", decimal.NewFromInt(100), decimal.NewFromInt(150), true, decimal.NewFromInt(50), false},
