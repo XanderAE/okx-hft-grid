@@ -993,6 +993,7 @@ func (app *application) placeInitialGridOrders() {
 
 		// Get current price via gateway (or legacy fallback)
 		var currentPrice decimal.Decimal
+		var bestBid decimal.Decimal
 		if app.gateway != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			ticker, err := app.gateway.GetTicker(ctx, gridCfg.Symbol)
@@ -1004,6 +1005,7 @@ func (app *application) placeInitialGridOrders() {
 				continue
 			}
 			currentPrice = ticker.Last
+			bestBid = ticker.BestBid
 		} else {
 			var err error
 			currentPrice, err = app.getCurrentPriceLegacy(gridCfg.Symbol)
@@ -1012,35 +1014,68 @@ func (app *application) placeInitialGridOrders() {
 			}
 		}
 
-		levels, err := strategy.CalculateGridLevels(&app.cfg.GridConfigs[i])
-		if err != nil {
-			app.logger.LogError("failed to calculate grid levels", map[string]string{
-				"symbol": gridCfg.Symbol,
-				"error":  err.Error(),
-			})
-			continue
-		}
-
-		orders := strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
-		if len(orders) == 0 {
-			continue
-		}
-
-		// In cash (spot) mode, only place BUY orders during initial grid placement.
-		// The bot has no coin holdings at startup, so SELL orders would be rejected
-		// by OKX for insufficient balance. SELL orders are placed by the fill handler
-		// after a BUY fill is received.
-		if app.cfg.Execution.TDMode == "cash" {
-			buyOrders := make([]*models.Order, 0, len(orders))
-			for _, o := range orders {
-				if o.Side == models.SideBuy {
-					buyOrders = append(buyOrders, o)
-				}
+		// Single-grid cash mode: place a single BUY at the best bid (or 0.1% below
+		// current price as fallback). This ensures the order is near the top of the
+		// book and can fill quickly, instead of being placed at the lower boundary
+		// of the adaptive range which may be too far from the market.
+		var orders []*models.Order
+		if gridCfg.GridCount == 1 && app.cfg.Execution.TDMode == "cash" {
+			buyPrice := bestBid
+			if !buyPrice.IsPositive() {
+				// Fallback: 0.1% below current price (~best bid approximation)
+				buyPrice = currentPrice.Mul(decimal.NewFromFloat(0.999))
 			}
-			orders = buyOrders
+			precision := getPricePrecision(gridCfg.Symbol)
+			buyPrice = buyPrice.Round(int32(precision))
+			orders = []*models.Order{{
+				Symbol:    gridCfg.Symbol,
+				Side:      models.SideBuy,
+				OrderType: models.OrderTypePostOnly,
+				Price:     buyPrice,
+				Quantity:  gridCfg.OrderSize,
+				Status:    models.OrderStatusPending,
+			}}
+			app.logger.LogInfo("single-grid mode: placing BUY at best bid", map[string]string{
+				"symbol":    gridCfg.Symbol,
+				"buy_price": buyPrice.String(),
+				"best_bid":  bestBid.String(),
+				"last":      currentPrice.String(),
+			})
+		} else {
+			levels, err := strategy.CalculateGridLevels(&app.cfg.GridConfigs[i])
+			if err != nil {
+				app.logger.LogError("failed to calculate grid levels", map[string]string{
+					"symbol": gridCfg.Symbol,
+					"error":  err.Error(),
+				})
+				continue
+			}
+
+			orders = strategy.PlaceGridOrders(levels, currentPrice, &app.cfg.GridConfigs[i])
 			if len(orders) == 0 {
 				continue
 			}
+
+			// In cash (spot) mode, only place BUY orders during initial grid placement.
+			// The bot has no coin holdings at startup, so SELL orders would be rejected
+			// by OKX for insufficient balance. SELL orders are placed by the fill handler
+			// after a BUY fill is received.
+			if app.cfg.Execution.TDMode == "cash" {
+				buyOrders := make([]*models.Order, 0, len(orders))
+				for _, o := range orders {
+					if o.Side == models.SideBuy {
+						buyOrders = append(buyOrders, o)
+					}
+				}
+				orders = buyOrders
+				if len(orders) == 0 {
+					continue
+				}
+			}
+		}
+
+		if len(orders) == 0 {
+			continue
 		}
 
 		placed := 0
