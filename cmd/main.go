@@ -733,14 +733,24 @@ func (app *application) inventoryRebalanceLoop() {
 				continue
 			}
 
-			// Every 5 seconds: cancel existing SELL and re-place 1 tick lower
-			// SELL price = buyPrice + 2 ticks - (elapsed/5s) ticks
-			tickSize := getTickSize(cfg.Symbol)
-			ticksDecayed := int64(elapsed.Seconds() / 5)
-			newSellPrice := pos.BuyPrice.Add(tickSize.Mul(decimal.NewFromInt(2))).Sub(tickSize.Mul(decimal.NewFromInt(ticksDecayed)))
+			// Time-based decay: gradually lower SELL price toward the fee-covering floor
+			// 0-30s: keep at +0.3% (initial price from fill handler)
+			// 30s-1min: lower to +0.25%
+			// 1min-2min: lower to +0.2% (fee floor - still profitable)
+			// >2min: market sell (force exit, handled above)
+			var newSellPrice decimal.Decimal
+			switch {
+			case elapsed < 30*time.Second:
+				// Keep at +0.3% (don't interfere with fill handler's initial order)
+				continue // Skip - let the fill handler's order stand
+			case elapsed < 1*time.Minute:
+				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.0025)) // +0.25%
+			default:
+				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.002)) // +0.2% (floor)
+			}
 
-			// Don't go below break-even minus fee (-0.2% hard floor)
-			minSellPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(0.998))
+			// Don't go below fee floor (+0.2% = still profitable after 0.16% round-trip fees)
+			minSellPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(1.002))
 			if newSellPrice.LessThan(minSellPrice) {
 				newSellPrice = minSellPrice
 			}
@@ -769,11 +779,10 @@ func (app *application) inventoryRebalanceLoop() {
 			qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
 
 			app.logger.LogInfo("DECAY: adjusting SELL price", map[string]string{
-				"symbol":     cfg.Symbol,
-				"new_price":  newSellPrice.String(),
-				"buy_price":  pos.BuyPrice.String(),
-				"elapsed_s":  fmt.Sprintf("%.0f", elapsed.Seconds()),
-				"ticks_down": fmt.Sprintf("%d", ticksDecayed),
+				"symbol":    cfg.Symbol,
+				"new_price": newSellPrice.String(),
+				"buy_price": pos.BuyPrice.String(),
+				"elapsed_s": fmt.Sprintf("%.0f", elapsed.Seconds()),
 			})
 
 			// Place new SELL at decayed price

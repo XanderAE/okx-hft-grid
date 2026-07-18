@@ -84,14 +84,12 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 
 	switch side {
 	case "buy":
-		// BUY filled → place SELL at fillPrice + 2 ticks (approximates bestAsk)
-		// The decay loop will handle adjustments every 5 seconds
 		counterSide = models.SideSell
 		if h.inventoryTracker != nil {
 			h.inventoryTracker.RecordBuy(instId, price, size, ordId)
 		}
-		tickSize := getTickSizeForFillHandler(instId)
-		counterPrice = price.Add(tickSize.Mul(decimal.NewFromInt(2)))
+		// Market-making: SELL at +0.3% (covers 0.16% fees, nets ~0.14% profit)
+		counterPrice = price.Mul(decimal.NewFromFloat(1.003))
 	case "sell":
 		// SELL filled → place BUY at fillPrice - 0.2% (fast cycle, small profit)
 		counterSide = models.SideBuy
