@@ -124,6 +124,7 @@ type application struct {
 
 	// Inventory tracking
 	inventoryTracker *execution.InventoryTracker
+	momentumFilter   *execution.MomentumFilter
 
 	// Shutdown
 	shutdownOnce sync.Once
@@ -259,6 +260,7 @@ func initializeComponents(cfg *config.SystemConfig, creds *config.Credentials) (
 
 	// 5.22 InventoryTracker (max $50 per symbol)
 	app.inventoryTracker = execution.NewInventoryTracker(decimal.NewFromFloat(50))
+	app.momentumFilter = execution.NewMomentumFilter(6)
 
 	// Wire up extreme market detector callbacks
 	app.emDetector.RegisterCallback(&extremeMarketHandler{app: app})
@@ -695,6 +697,32 @@ func (app *application) inventoryRebalanceLoop() {
 					continue
 				}
 
+				// Record price for momentum
+				app.momentumFilter.RecordPrice(cfg.Symbol, tickerObs.Last)
+
+				// Momentum: cancel BUY and skip if in downtrend
+				if app.momentumFilter.IsDowntrend(cfg.Symbol) {
+					ctx2a, cancel2a := context.WithTimeout(context.Background(), 5*time.Second)
+					pendingMom, _ := app.gateway.ListPendingOrders(ctx2a, cfg.Symbol)
+					cancel2a()
+					for _, order := range pendingMom {
+						if isBotOwnedClientOrderID(order.ClientOrderID) && order.Side == models.SideBuy {
+							ctx3a, cancel3a := context.WithTimeout(context.Background(), 5*time.Second)
+							app.gateway.CancelOrder(ctx3a, execution.OrderRef{
+								Symbol:          cfg.Symbol,
+								ExchangeOrderID: order.ExchangeOrderID,
+								ClientOrderID:   order.ClientOrderID,
+							})
+							cancel3a()
+						}
+					}
+					app.logger.LogInfo("MOMENTUM: cancelled BUY during downtrend", map[string]string{
+						"symbol": cfg.Symbol,
+						"price":  tickerObs.Last.String(),
+					})
+					continue
+				}
+
 				// Check existing pending orders
 				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
 				pending, _ := app.gateway.ListPendingOrders(ctx2, cfg.Symbol)
@@ -798,6 +826,48 @@ func (app *application) inventoryRebalanceLoop() {
 				}
 				app.apiClient.PlaceOrder(req)
 				app.inventoryTracker.ClearPosition(cfg.Symbol)
+				continue
+			}
+
+			// Record price for momentum
+			app.momentumFilter.RecordPrice(cfg.Symbol, currentPrice)
+
+			// Skewed spread: if underwater, use +0.15% to exit faster
+			if currentPrice.LessThan(pos.BuyPrice) {
+				skewedPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(1.0015))
+				precision := getPricePrecision(cfg.Symbol)
+				skewedPrice = skewedPrice.Round(int32(precision))
+				app.logger.LogInfo("SKEWED: position underwater, tight spread", map[string]string{
+					"symbol":    cfg.Symbol,
+					"buy_price": pos.BuyPrice.String(),
+					"current":   currentPrice.String(),
+					"sell_at":   skewedPrice.String(),
+				})
+				if app.gateway != nil {
+					ctx2b, cancel2b := context.WithTimeout(context.Background(), 5*time.Second)
+					pendingSkew, _ := app.gateway.ListPendingOrders(ctx2b, cfg.Symbol)
+					cancel2b()
+					for _, order := range pendingSkew {
+						if isBotOwnedClientOrderID(order.ClientOrderID) {
+							ctx3b, cancel3b := context.WithTimeout(context.Background(), 5*time.Second)
+							app.gateway.CancelOrder(ctx3b, execution.OrderRef{
+								Symbol:          cfg.Symbol,
+								ExchangeOrderID: order.ExchangeOrderID,
+								ClientOrderID:   order.ClientOrderID,
+							})
+							cancel3b()
+						}
+					}
+				}
+				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+				skewReq := &execution.OrderRequest{
+					Symbol:    cfg.Symbol,
+					Side:      models.SideSell,
+					OrderType: models.OrderTypePostOnly,
+					Price:     skewedPrice,
+					Quantity:  qty,
+				}
+				app.apiClient.PlaceOrder(skewReq)
 				continue
 			}
 
