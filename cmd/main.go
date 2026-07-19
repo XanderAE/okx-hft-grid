@@ -683,6 +683,101 @@ func (app *application) inventoryRebalanceLoop() {
 	for range ticker.C {
 		for _, cfg := range app.cfg.GridConfigs {
 			pos := app.inventoryTracker.GetPosition(cfg.Symbol)
+
+			// ---- BUY order tracking (when no position held) ----
+			// If price moves up, the old BUY sits far below market and never fills.
+			// Cancel stale BUY and re-place at bestBid - 1 tick when drift > 0.3%.
+			if pos == nil && app.cfg.Execution.TDMode == "cash" && cfg.GridCount == 1 {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				tickerObs, err := app.gateway.GetTicker(ctx, cfg.Symbol)
+				cancel()
+				if err != nil || !tickerObs.BestBid.IsPositive() {
+					continue
+				}
+
+				// 24h position filter: don't place BUY if price is in upper half of 24h range
+				if tickerObs.High24h.IsPositive() && tickerObs.Low24h.IsPositive() {
+					mid24h := tickerObs.High24h.Add(tickerObs.Low24h).Div(decimal.NewFromInt(2))
+					if tickerObs.Last.GreaterThanOrEqual(mid24h) {
+						continue
+					}
+				}
+
+				// Check existing pending orders
+				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+				pending, _ := app.gateway.ListPendingOrders(ctx2, cfg.Symbol)
+				cancel2()
+
+				// Find bot-owned BUY orders
+				var hasBuyOrder bool
+				var buyOrderPrice decimal.Decimal
+				var buyOrderRef execution.OrderRef
+				for _, order := range pending {
+					if isBotOwnedClientOrderID(order.ClientOrderID) && order.Side == models.SideBuy {
+						hasBuyOrder = true
+						buyOrderPrice = order.Price
+						buyOrderRef = execution.OrderRef{
+							Symbol:          cfg.Symbol,
+							ExchangeOrderID: order.ExchangeOrderID,
+							ClientOrderID:   order.ClientOrderID,
+						}
+						break
+					}
+				}
+
+				// Calculate ideal BUY price: bestBid - 1 tick
+				tickSize := getTickSize(cfg.Symbol)
+				idealBuyPrice := tickerObs.BestBid.Sub(tickSize)
+				precision := getPricePrecision(cfg.Symbol)
+				idealBuyPrice = idealBuyPrice.Round(int32(precision))
+
+				if !hasBuyOrder {
+					// Place fresh BUY
+					req := &execution.OrderRequest{
+						Symbol:    cfg.Symbol,
+						Side:      models.SideBuy,
+						OrderType: models.OrderTypePostOnly,
+						Price:     idealBuyPrice,
+						Quantity:  cfg.OrderSize,
+					}
+					app.apiClient.PlaceOrder(req)
+					app.logger.LogInfo("REBALANCE: placed new BUY order", map[string]string{
+						"symbol": cfg.Symbol,
+						"price":  idealBuyPrice.String(),
+					})
+					continue
+				}
+
+				// If BUY exists but is >0.3% away from ideal, cancel and re-place
+				if buyOrderPrice.IsPositive() {
+					drift := idealBuyPrice.Sub(buyOrderPrice).Abs().Div(idealBuyPrice)
+					if drift.GreaterThan(decimal.NewFromFloat(0.003)) {
+						// Cancel old BUY
+						ctx3, cancel3 := context.WithTimeout(context.Background(), 5*time.Second)
+						app.gateway.CancelOrder(ctx3, buyOrderRef)
+						cancel3()
+
+						// Place new BUY at current bestBid - 1 tick
+						req := &execution.OrderRequest{
+							Symbol:    cfg.Symbol,
+							Side:      models.SideBuy,
+							OrderType: models.OrderTypePostOnly,
+							Price:     idealBuyPrice,
+							Quantity:  cfg.OrderSize,
+						}
+						app.apiClient.PlaceOrder(req)
+						app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.3%)", map[string]string{
+							"symbol":    cfg.Symbol,
+							"old_price": buyOrderPrice.String(),
+							"new_price": idealBuyPrice.String(),
+							"drift_pct": drift.Mul(decimal.NewFromInt(100)).Round(2).String() + "%",
+						})
+					}
+				}
+				continue
+			}
+			// ---- END BUY order tracking ----
+
 			if pos == nil {
 				continue
 			}
