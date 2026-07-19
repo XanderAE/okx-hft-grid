@@ -84,10 +84,10 @@ func (t *InventoryTracker) IsInventoryFull(symbol string) bool {
 }
 
 // CalculateSellPrice returns the appropriate SELL price based on time decay.
-// - < 5 min: buyPrice + 0.2% (normal profit)
-// - 5-15 min: buyPrice + 0.1% (reduced expectation)
-// - 15-30 min: buyPrice - 0.05% (small loss to exit)
-// - > 30 min: decimal.Zero (signal to use market price)
+// - < 1h: buyPrice + 0.3% (initial profit target)
+// - 1h-6h: buyPrice + 0.25% (reduced expectation)
+// - 6h-12h: buyPrice + 0.2% (fee floor)
+// - > 12h: decimal.Zero (signal to use market price / force exit)
 func (t *InventoryTracker) CalculateSellPrice(symbol string) (decimal.Decimal, bool) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -100,18 +100,14 @@ func (t *InventoryTracker) CalculateSellPrice(symbol string) (decimal.Decimal, b
 	buyPrice := pos.BuyPrice
 
 	switch {
-	case elapsed < 5*time.Minute:
-		// Normal: +0.2%
-		return buyPrice.Mul(decimal.NewFromFloat(1.002)), true
-	case elapsed < 15*time.Minute:
-		// Reduced: +0.1%
-		return buyPrice.Mul(decimal.NewFromFloat(1.001)), true
-	case elapsed < 30*time.Minute:
-		// Small loss: -0.05%
-		return buyPrice.Mul(decimal.NewFromFloat(0.9995)), true
+	case elapsed < 1*time.Hour:
+		return buyPrice.Mul(decimal.NewFromFloat(1.003)), true // +0.3%
+	case elapsed < 6*time.Hour:
+		return buyPrice.Mul(decimal.NewFromFloat(1.0025)), true // +0.25%
+	case elapsed < 12*time.Hour:
+		return buyPrice.Mul(decimal.NewFromFloat(1.002)), true // +0.2%
 	default:
-		// Force exit: return zero to signal market sell
-		return decimal.Zero, true
+		return decimal.Zero, true // market sell signal
 	}
 }
 

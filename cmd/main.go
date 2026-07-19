@@ -675,10 +675,10 @@ func (a *botOrderStoreAdapter) IsBotOwned(_ context.Context, _ string, clientOrd
 }
 
 // inventoryRebalanceLoop implements the SELL decay loop for the market-making strategy.
-// Every 5 seconds, it checks open positions and adjusts the SELL price downward by 1 tick.
-// After 2 minutes of decay (24 iterations), it force-exits with a market sell.
+// Every 30 seconds, it checks open positions and adjusts the SELL price downward.
+// After 12 hours of decay, it force-exits with a market sell.
 func (app *application) inventoryRebalanceLoop() {
-	ticker := time.NewTicker(5 * time.Second) // 5-second decay interval
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for range ticker.C {
 		for _, cfg := range app.cfg.GridConfigs {
@@ -716,9 +716,9 @@ func (app *application) inventoryRebalanceLoop() {
 
 			elapsed := time.Since(pos.BuyTime)
 
-			// Force market sell after 2 minutes
-			if elapsed > 2*time.Minute {
-				app.logger.LogWarn("DECAY: force market sell after 2min", map[string]string{
+			// Force market sell after 12 hours
+			if elapsed > 12*time.Hour {
+				app.logger.LogWarn("DECAY: force market sell after 12h", map[string]string{
 					"symbol": cfg.Symbol,
 				})
 				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
@@ -734,16 +734,16 @@ func (app *application) inventoryRebalanceLoop() {
 			}
 
 			// Time-based decay: gradually lower SELL price toward the fee-covering floor
-			// 0-30s: keep at +0.3% (initial price from fill handler)
-			// 30s-1min: lower to +0.25%
-			// 1min-2min: lower to +0.2% (fee floor - still profitable)
-			// >2min: market sell (force exit, handled above)
+			// 0-1h: keep at +0.3% (don't interfere with fill handler's initial order)
+			// 1h-6h: lower to +0.25%
+			// 6h-12h: lower to +0.2% (fee floor - still profitable)
+			// >12h: market sell (force exit, handled above)
 			var newSellPrice decimal.Decimal
 			switch {
-			case elapsed < 30*time.Second:
+			case elapsed < 1*time.Hour:
 				// Keep at +0.3% (don't interfere with fill handler's initial order)
-				continue // Skip - let the fill handler's order stand
-			case elapsed < 1*time.Minute:
+				continue
+			case elapsed < 6*time.Hour:
 				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.0025)) // +0.25%
 			default:
 				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.002)) // +0.2% (floor)
