@@ -695,14 +695,6 @@ func (app *application) inventoryRebalanceLoop() {
 					continue
 				}
 
-				// 24h position filter: don't place BUY if price is in upper half of 24h range
-				if tickerObs.High24h.IsPositive() && tickerObs.Low24h.IsPositive() {
-					mid24h := tickerObs.High24h.Add(tickerObs.Low24h).Div(decimal.NewFromInt(2))
-					if tickerObs.Last.GreaterThanOrEqual(mid24h) {
-						continue
-					}
-				}
-
 				// Check existing pending orders
 				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
 				pending, _ := app.gateway.ListPendingOrders(ctx2, cfg.Symbol)
@@ -748,10 +740,10 @@ func (app *application) inventoryRebalanceLoop() {
 					continue
 				}
 
-				// If BUY exists but is >0.3% away from ideal, cancel and re-place
+				// If BUY exists but is >0.1% away from ideal, cancel and re-place
 				if buyOrderPrice.IsPositive() {
 					drift := idealBuyPrice.Sub(buyOrderPrice).Abs().Div(idealBuyPrice)
-					if drift.GreaterThan(decimal.NewFromFloat(0.003)) {
+					if drift.GreaterThan(decimal.NewFromFloat(0.001)) {
 						// Cancel old BUY
 						ctx3, cancel3 := context.WithTimeout(context.Background(), 5*time.Second)
 						app.gateway.CancelOrder(ctx3, buyOrderRef)
@@ -766,7 +758,7 @@ func (app *application) inventoryRebalanceLoop() {
 							Quantity:  cfg.OrderSize,
 						}
 						app.apiClient.PlaceOrder(req)
-						app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.3%)", map[string]string{
+						app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.1%)", map[string]string{
 							"symbol":    cfg.Symbol,
 							"old_price": buyOrderPrice.String(),
 							"new_price": idealBuyPrice.String(),
@@ -1229,7 +1221,6 @@ func (app *application) placeInitialGridOrders() {
 		// Get current price via gateway (or legacy fallback)
 		var currentPrice decimal.Decimal
 		var bestBid decimal.Decimal
-		var high24h, low24h decimal.Decimal
 		if app.gateway != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			ticker, err := app.gateway.GetTicker(ctx, gridCfg.Symbol)
@@ -1242,8 +1233,6 @@ func (app *application) placeInitialGridOrders() {
 			}
 			currentPrice = ticker.Last
 			bestBid = ticker.BestBid
-			high24h = ticker.High24h
-			low24h = ticker.Low24h
 		} else {
 			var err error
 			currentPrice, err = app.getCurrentPriceLegacy(gridCfg.Symbol)
@@ -1266,21 +1255,6 @@ func (app *application) placeInitialGridOrders() {
 			if app.inventoryTracker != nil && app.inventoryTracker.HasPosition(gridCfg.Symbol) {
 				app.logger.LogInfo("already has position, skipping new BUY", map[string]string{"symbol": gridCfg.Symbol})
 				continue
-			}
-
-			// Price position filter: only buy in the lower half of 24h range
-			if high24h.IsPositive() && low24h.IsPositive() {
-				mid24h := high24h.Add(low24h).Div(decimal.NewFromInt(2))
-				if currentPrice.GreaterThanOrEqual(mid24h) {
-					app.logger.LogInfo("single-grid: skipping BUY, price in upper half of 24h range", map[string]string{
-						"symbol":   gridCfg.Symbol,
-						"price":    currentPrice.String(),
-						"mid_24h":  mid24h.String(),
-						"high_24h": high24h.String(),
-						"low_24h":  low24h.String(),
-					})
-					continue
-				}
 			}
 
 			// Market-making: BUY at bestBid - 1 tick (passive, only fills on dip)
