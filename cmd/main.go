@@ -1290,7 +1290,6 @@ func (app *application) placeInitialGridOrders() {
 
 		// Get current price via gateway (or legacy fallback)
 		var currentPrice decimal.Decimal
-		var bestBid decimal.Decimal
 		if app.gateway != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			ticker, err := app.gateway.GetTicker(ctx, gridCfg.Symbol)
@@ -1302,7 +1301,6 @@ func (app *application) placeInitialGridOrders() {
 				continue
 			}
 			currentPrice = ticker.Last
-			bestBid = ticker.BestBid
 		} else {
 			var err error
 			currentPrice, err = app.getCurrentPriceLegacy(gridCfg.Symbol)
@@ -1317,40 +1315,13 @@ func (app *application) placeInitialGridOrders() {
 		// of the adaptive range which may be too far from the market.
 		var orders []*models.Order
 		if gridCfg.GridCount == 1 && app.cfg.Execution.TDMode == "cash" {
-			// Inventory checks: skip if already holding or full
-			if app.inventoryTracker != nil && app.inventoryTracker.IsInventoryFull(gridCfg.Symbol) {
-				app.logger.LogInfo("inventory full, skipping BUY", map[string]string{"symbol": gridCfg.Symbol})
-				continue
-			}
-			if app.inventoryTracker != nil && app.inventoryTracker.HasPosition(gridCfg.Symbol) {
-				app.logger.LogInfo("already has position, skipping new BUY", map[string]string{"symbol": gridCfg.Symbol})
-				continue
-			}
-
-			// Market-making: BUY at bestBid - 1 tick (passive, only fills on dip)
-			tickSize := getTickSize(gridCfg.Symbol)
-			buyPrice := bestBid.Sub(tickSize)
-			if !buyPrice.IsPositive() {
-				// Fallback: 0.1% below current price
-				buyPrice = currentPrice.Mul(decimal.NewFromFloat(0.999))
-			}
-			precision := getPricePrecision(gridCfg.Symbol)
-			buyPrice = buyPrice.Round(int32(precision))
-			orders = []*models.Order{{
-				Symbol:    gridCfg.Symbol,
-				Side:      models.SideBuy,
-				OrderType: models.OrderTypePostOnly,
-				Price:     buyPrice,
-				Quantity:  gridCfg.OrderSize,
-				Status:    models.OrderStatusPending,
-			}}
-			app.logger.LogInfo("single-grid mode: placing BUY at bestBid - 1 tick", map[string]string{
-				"symbol":    gridCfg.Symbol,
-				"buy_price": buyPrice.String(),
-				"best_bid":  bestBid.String(),
-				"tick_size": tickSize.String(),
-				"last":      currentPrice.String(),
+			// In market-making mode, don't place BUY at startup.
+			// The inventoryRebalanceLoop will place BUY after accumulating
+			// momentum data (4 ticks = ~120 seconds of observation).
+			app.logger.LogInfo("single-grid mode: deferring BUY to rebalance loop (momentum warmup)", map[string]string{
+				"symbol": gridCfg.Symbol,
 			})
+			continue
 		} else {
 			levels, err := strategy.CalculateGridLevels(&app.cfg.GridConfigs[i])
 			if err != nil {
