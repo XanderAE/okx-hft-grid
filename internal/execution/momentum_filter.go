@@ -44,3 +44,11 @@ func (f *MomentumFilter) IsDowntrend(symbol string) bool {
 	n := len(h)
 	return h[n-4].GreaterThan(h[n-3]) && h[n-3].GreaterThan(h[n-2]) && h[n-2].GreaterThan(h[n-1])
 }
+
+// HasEnoughData returns true if at least 4 price points have been recorded for the symbol.
+// Until this returns true, no trading decision should be made.
+func (f *MomentumFilter) HasEnoughData(symbol string) bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return len(f.history[symbol]) >= 4
+}

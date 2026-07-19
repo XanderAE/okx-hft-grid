@@ -700,6 +700,14 @@ func (app *application) inventoryRebalanceLoop() {
 				// Record price for momentum
 				app.momentumFilter.RecordPrice(cfg.Symbol, tickerObs.Last)
 
+				// Wait for warmup: need 4 data points before making any decision
+				if !app.momentumFilter.HasEnoughData(cfg.Symbol) {
+					app.logger.LogInfo("MOMENTUM: warmup, waiting for data", map[string]string{
+						"symbol": cfg.Symbol,
+					})
+					continue
+				}
+
 				// Momentum: cancel BUY and skip if in downtrend
 				if app.momentumFilter.IsDowntrend(cfg.Symbol) {
 					ctx2a, cancel2a := context.WithTimeout(context.Background(), 5*time.Second)
