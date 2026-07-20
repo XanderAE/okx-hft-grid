@@ -1,0 +1,187 @@
+//@version=6
+// BTC-USDT perpetual adaptive market-making approximation for TradingView.
+//
+// SETUP (no account/API credentials are used):
+// 1. Apply to an OKX BTC-USDT perpetual/swap chart feed that is available to you.
+//    Do not assume a particular TradingView ticker exists; choose the feed in your account.
+// 2. Use a liquid intraday timeframe (start with 1 minute) and enable Bar Magnifier when
+//    its lower-timeframe data is available. Candle history has no bid/ask, queue, or
+//    post-only information, so this remains a conservative approximation.
+// 3. Strategy Properties are intentionally fixed to a conservative 0.05% commission on
+//    EVERY fill and one tick of slippage. TradingView cannot set maker and taker fees per
+//    order type. The Inputs below show 0.02% maker / 0.05% taker assumptions, but cannot
+//    override strategy() properties at runtime; adjust Properties manually if needed.
+// 4. Pine limit entries/TPs are NOT a post-only or queue-fill guarantee. A long uses
+//    close - one mintick and a short uses close + one mintick as bid/ask proxies.
+//    Each still-pending entry is cancelled at the next bar calculation, so it is valid for
+//    at most the following historical candle. This approximates one-bar expiry only.
+// 5. Never optimize parameters using the OOS range. Set its start in the inputs, optimize
+//    only before it, then review the OOS figures shown in the diagnostics table.
+//
+// Contract/leverage note: TradingView order quantity is a paper BTC-unit approximation:
+// equity × allocation × dynamic leverage / close. It does not set OKX isolated leverage,
+// contract multiplier, liquidation price, post-only flags, or an exchange order queue.
+strategy("BTC-USDT Perpetual Adaptive MM (paper approximation)", overlay = true,
+     initial_capital = 10000, currency = currency.USD, pyramiding = 0,
+     commission_type = strategy.commission.percent, commission_value = 0.05,
+     slippage = 1, calc_on_order_fills = true, process_orders_on_close = false)
+
+string SIGNAL_GROUP = "Signal and leverage"
+fastLength = input.int(5, "Fast EMA", minval = 2, group = SIGNAL_GROUP)
+slowLength = input.int(20, "Slow EMA / warmup bars", minval = 3, group = SIGNAL_GROUP)
+slopeBars = input.int(1, "Consecutive EMA slope bars", minval = 1, maxval = 5, group = SIGNAL_GROUP)
+atrLength = input.int(14, "ATR length for confidence", minval = 2, group = SIGNAL_GROUP)
+minConfidence = input.float(0.20, "Minimum confidence", minval = 0.0, maxval = 1.0, step = 0.01, group = SIGNAL_GROUP)
+volatilityLength = input.int(20, "Realized-volatility length", minval = 2, group = SIGNAL_GROUP)
+volatilityPenalty = input.float(40.0, "Volatility penalty", minval = 0.0, step = 1.0, group = SIGNAL_GROUP)
+maxLeverageInput = input.float(3.0, "Maximum paper leverage (hard capped at 3x)", minval = 1.0, maxval = 3.0, step = 0.1, group = SIGNAL_GROUP)
+marginAllocationPct = input.float(10.0, "Paper margin allocation (% equity)", minval = 0.1, maxval = 100.0, step = 0.1, group = SIGNAL_GROUP)
+
+string EXIT_GROUP = "Maker TP and risk exits"
+initialTPPercent = input.float(0.08, "Initial maker TP spread (%)", minval = 0.05, maxval = 0.08, step = 0.01, group = EXIT_GROUP)
+hardStopPercent = input.float(1.5, "Hard stop (%)", minval = 1.5, maxval = 3.0, step = 0.1, group = EXIT_GROUP)
+maxHoldHours = input.float(12.0, "Maximum hold (hours)", minval = 0.1, maxval = 12.0, step = 0.1, group = EXIT_GROUP)
+forcedExitSlippageTicks = input.int(1, "Forced-exit slippage (ticks; diagnostic)", minval = 0, group = EXIT_GROUP)
+
+string COST_GROUP = "Fees and funding display"
+makerFeePercent = input.float(0.02, "Maker fee (%)", minval = 0.0, step = 0.01, group = COST_GROUP)
+takerFeePercent = input.float(0.05, "Taker fee (%)", minval = 0.0, step = 0.01, group = COST_GROUP)
+fundingRatePercent = input.float(0.01, "Assumed funding per 8h (%) — display only", step = 0.001, group = COST_GROUP)
+
+string DATE_GROUP = "Backtest dates (do not tune on OOS)"
+inSampleStart = input.time(timestamp("01 Jan 2022 00:00 +0000"), "In-sample start", group = DATE_GROUP)
+oosStart = input.time(timestamp("01 Jan 2024 00:00 +0000"), "Out-of-sample start", group = DATE_GROUP)
+backtestEnd = input.time(timestamp("01 Jan 2030 00:00 +0000"), "Backtest end", group = DATE_GROUP)
+tradeInSample = input.bool(true, "Trade in-sample", group = DATE_GROUP)
+tradeOOS = input.bool(true, "Trade out-of-sample", group = DATE_GROUP)
+
+// The Go strategy's confidence uses EMA-gap / price scale × 50, clamped to [0, 1].
+fastEMA = ta.ema(close, fastLength)
+slowEMA = ta.ema(close, slowLength)
+atr = ta.atr(atrLength)
+confidence = not na(atr) and atr > 0 ? math.min(1.0, math.max(0.0, math.abs(fastEMA - slowEMA) / slowEMA * 50.0)) : 0.0
+
+bool risingSlope = true
+bool fallingSlope = true
+for offset = 0 to slopeBars - 1
+    risingSlope := risingSlope and fastEMA[offset] > fastEMA[offset + 1]
+    fallingSlope := fallingSlope and fastEMA[offset] < fastEMA[offset + 1]
+
+historyReady = bar_index >= slowLength + slopeBars and not na(fastEMA) and not na(slowEMA)
+rawLong = historyReady and fastEMA > slowEMA and risingSlope
+rawShort = historyReady and fastEMA < slowEMA and fallingSlope
+qualifiedLong = rawLong and confidence >= minConfidence
+qualifiedShort = rawShort and confidence >= minConfidence
+
+logReturn = not na(close[1]) and close > 0 and close[1] > 0 ? math.log(close / close[1]) : na
+realizedVolatility = ta.stdev(logReturn, volatilityLength)
+maxLeverage = math.min(3.0, math.max(1.0, maxLeverageInput))
+dynamicLeverage = na(realizedVolatility) or realizedVolatility < 0 ? 1.0 : math.min(maxLeverage, math.max(1.0, 1.0 + confidence * 2.0 - realizedVolatility * volatilityPenalty))
+paperQuantityBTC = math.max(syminfo.mintick, strategy.equity * marginAllocationPct / 100.0 * dynamicLeverage / close)
+
+// Inputs are percent values; internally all risk/target calculations use fractions.
+tpSpread = initialTPPercent / 100.0
+feeFloor = 0.0005 // 0.05%, strictly above the 0.04% two-maker-leg fee floor.
+hardStop = hardStopPercent / 100.0
+maxHoldMilliseconds = int(maxHoldHours * 60.0 * 60.0 * 1000.0)
+
+inSample = time >= inSampleStart and time < oosStart
+oos = time >= oosStart and time <= backtestEnd
+phaseEnabled = (inSample and tradeInSample) or (oos and tradeOOS)
+entryAllowed = phaseEnabled and time <= backtestEnd and strategy.position_size == 0
+
+var int rawSignals = 0
+var int submittedEntries = 0
+var int observedFills = 0
+var int closedSeen = 0
+var int inSampleClosed = 0
+var int oosClosed = 0
+var float inSampleProfit = 0.0
+var float oosProfit = 0.0
+
+if rawLong or rawShort
+    rawSignals += 1
+if strategy.position_size != 0 and nz(strategy.position_size[1]) == 0
+    observedFills += 1
+
+// Closed-trade APIs provide actual tester closes/profit, enabling IS/OOS diagnostics.
+if strategy.closedtrades > closedSeen
+    int newlyClosed = strategy.closedtrades - closedSeen
+    for closedOffset = 0 to newlyClosed - 1
+        int tradeIndex = closedSeen + closedOffset
+        float tradeProfit = strategy.closedtrades.profit(tradeIndex)
+        int exitTime = strategy.closedtrades.exit_time(tradeIndex)
+        if exitTime >= oosStart
+            oosClosed += 1
+            oosProfit += tradeProfit
+        else
+            inSampleClosed += 1
+            inSampleProfit += tradeProfit
+    closedSeen := strategy.closedtrades
+
+// Entries can only be a single bar old. TradingView has no historical best bid/ask;
+// close is a proxy, and the limit uses exactly one symbol minimum tick of price improvement.
+if strategy.position_size == 0
+    strategy.cancel("Long")
+    strategy.cancel("Short")
+    if entryAllowed and qualifiedLong
+        strategy.entry("Long", strategy.long, qty = paperQuantityBTC, limit = close - syminfo.mintick, comment = "Passive-intent long; one-bar expiry")
+        submittedEntries += 1
+    else if entryAllowed and qualifiedShort
+        strategy.entry("Short", strategy.short, qty = paperQuantityBTC, limit = close + syminfo.mintick, comment = "Passive-intent short; one-bar expiry")
+        submittedEntries += 1
+else
+    // Never leave a pending opposing entry while a position is open.
+    strategy.cancel("Long")
+    strategy.cancel("Short")
+    entryPrice = strategy.position_avg_price
+    entryTime = strategy.opentrades.entry_time(0)
+    heldMilliseconds = time - entryTime
+    isLong = strategy.position_size > 0
+    underwater = isLong ? close < entryPrice : close > entryPrice
+    decayedSpread = heldMilliseconds < 60 * 60 * 1000 ? tpSpread : heldMilliseconds < 6 * 60 * 60 * 1000 ? math.max(feeFloor, tpSpread * 0.80) : math.max(feeFloor, tpSpread * 0.67)
+    targetSpread = underwater ? feeFloor : decayedSpread
+    takeProfitPrice = isLong ? entryPrice * (1.0 + targetSpread) : entryPrice * (1.0 - targetSpread)
+    stopPrice = isLong ? entryPrice * (1.0 - hardStop) : entryPrice * (1.0 + hardStop)
+    hardStopNow = isLong ? low <= stopPrice : high >= stopPrice
+    forcedExit = heldMilliseconds >= maxHoldMilliseconds or time >= backtestEnd
+
+    // limit is passive TP intent; stop is a stop-market-style risk exit, never post-only.
+    // The global 0.05% fee/one-tick slippage are deliberately conservative because Pine
+    // cannot charge maker 0.02% for only entry/TP and taker 0.05% for only forced exits.
+    if forcedExit or hardStopNow
+        strategy.cancel(isLong ? "Long exit" : "Short exit")
+        strategy.close(isLong ? "Long" : "Short", comment = forcedExit ? "Forced market exit" : "Hard-stop market exit", immediately = true)
+    else if isLong
+        strategy.exit("Long exit", from_entry = "Long", limit = takeProfitPrice, stop = stopPrice, comment_profit = "Maker-TP intent", comment_loss = "Hard-stop taker intent")
+    else
+        strategy.exit("Short exit", from_entry = "Short", limit = takeProfitPrice, stop = stopPrice, comment_profit = "Maker-TP intent", comment_loss = "Hard-stop taker intent")
+
+plot(fastEMA, "EMA 5", color = color.teal)
+plot(slowEMA, "EMA 20", color = color.orange)
+bgcolor(oos ? color.new(color.blue, 92) : inSample ? color.new(color.green, 94) : na, title = "IS/OOS region")
+plotshape(qualifiedLong and entryAllowed, "Qualified long", shape.triangleup, location.belowbar, color.new(color.green, 0), size = size.tiny)
+plotshape(qualifiedShort and entryAllowed, "Qualified short", shape.triangledown, location.abovebar, color.new(color.red, 0), size = size.tiny)
+
+var table diagnostics = table.new(position.top_right, 2, 10, border_width = 1)
+if barstate.islast
+    table.cell(diagnostics, 0, 0, "Adaptive MM diagnostic", text_color = color.white, bgcolor = color.navy)
+    table.cell(diagnostics, 1, 0, oos ? "OOS" : inSample ? "IS" : "Outside range", text_color = color.white, bgcolor = color.navy)
+    table.cell(diagnostics, 0, 1, "Raw / submitted / fills")
+    table.cell(diagnostics, 1, 1, str.tostring(rawSignals) + " / " + str.tostring(submittedEntries) + " / " + str.tostring(observedFills))
+    table.cell(diagnostics, 0, 2, "Closed IS / OOS")
+    table.cell(diagnostics, 1, 2, str.tostring(inSampleClosed) + " / " + str.tostring(oosClosed))
+    table.cell(diagnostics, 0, 3, "Tester P&L IS / OOS")
+    table.cell(diagnostics, 1, 3, str.tostring(inSampleProfit, format.mintick) + " / " + str.tostring(oosProfit, format.mintick))
+    table.cell(diagnostics, 0, 4, "Raw direction / confidence")
+    table.cell(diagnostics, 1, 4, rawLong ? "LONG" : rawShort ? "SHORT" : "FLAT" + " / " + str.tostring(confidence, "#.###"))
+    table.cell(diagnostics, 0, 5, "Dynamic paper leverage")
+    table.cell(diagnostics, 1, 5, str.tostring(dynamicLeverage, "#.##") + "x (cap 3x)")
+    table.cell(diagnostics, 0, 6, "TP / stop")
+    table.cell(diagnostics, 1, 6, str.tostring(initialTPPercent, "#.##") + "% / " + str.tostring(hardStopPercent, "#.##") + "%")
+    table.cell(diagnostics, 0, 7, "Tester fee / slippage")
+    table.cell(diagnostics, 1, 7, "0.05% all fills / 1 tick")
+    table.cell(diagnostics, 0, 8, "Assumed maker/taker")
+    table.cell(diagnostics, 1, 8, str.tostring(makerFeePercent, "#.##") + "% / " + str.tostring(takerFeePercent, "#.##") + "%")
+    table.cell(diagnostics, 0, 9, "Funding (not tester P&L)")
+    table.cell(diagnostics, 1, 9, str.tostring(fundingRatePercent, "#.###") + "% per 8h")
