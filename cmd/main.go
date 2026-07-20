@@ -777,11 +777,26 @@ func (app *application) inventoryRebalanceLoop() {
 						Quantity:      cfg.OrderSize,
 						ClientOrderID: generateBotOrderID(cfg.Symbol, "buy"),
 					}
-					app.apiClient.PlaceOrder(req)
-					app.logger.LogInfo("REBALANCE: placed new BUY order", map[string]string{
-						"symbol": cfg.Symbol,
-						"price":  idealBuyPrice.String(),
-					})
+					result, placeErr := app.apiClient.PlaceOrder(req)
+					if placeErr != nil {
+						app.logger.LogError("REBALANCE: BUY order failed", map[string]string{
+							"symbol": cfg.Symbol,
+							"price":  idealBuyPrice.String(),
+							"error":  placeErr.Error(),
+						})
+					} else if !result.Success {
+						app.logger.LogWarn("REBALANCE: BUY order rejected", map[string]string{
+							"symbol": cfg.Symbol,
+							"price":  idealBuyPrice.String(),
+							"reason": result.Error,
+						})
+					} else {
+						app.logger.LogInfo("REBALANCE: placed new BUY order", map[string]string{
+							"symbol":   cfg.Symbol,
+							"price":    idealBuyPrice.String(),
+							"order_id": result.ExchangeOrderID,
+						})
+					}
 					continue
 				}
 
@@ -803,13 +818,28 @@ func (app *application) inventoryRebalanceLoop() {
 							Quantity:      cfg.OrderSize,
 							ClientOrderID: generateBotOrderID(cfg.Symbol, "buy"),
 						}
-						app.apiClient.PlaceOrder(req)
-						app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.1%)", map[string]string{
-							"symbol":    cfg.Symbol,
-							"old_price": buyOrderPrice.String(),
-							"new_price": idealBuyPrice.String(),
-							"drift_pct": drift.Mul(decimal.NewFromInt(100)).Round(2).String() + "%",
-						})
+						result, placeErr := app.apiClient.PlaceOrder(req)
+						if placeErr != nil {
+							app.logger.LogError("REBALANCE: BUY order failed", map[string]string{
+								"symbol": cfg.Symbol,
+								"price":  idealBuyPrice.String(),
+								"error":  placeErr.Error(),
+							})
+						} else if !result.Success {
+							app.logger.LogWarn("REBALANCE: BUY order rejected", map[string]string{
+								"symbol": cfg.Symbol,
+								"price":  idealBuyPrice.String(),
+								"reason": result.Error,
+							})
+						} else {
+							app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.1%)", map[string]string{
+								"symbol":    cfg.Symbol,
+								"old_price": buyOrderPrice.String(),
+								"new_price": idealBuyPrice.String(),
+								"drift_pct": drift.Mul(decimal.NewFromInt(100)).Round(2).String() + "%",
+								"order_id":  result.ExchangeOrderID,
+							})
+						}
 					}
 				}
 				continue
