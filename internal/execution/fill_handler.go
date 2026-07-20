@@ -89,15 +89,15 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 		if h.inventoryTracker != nil {
 			h.inventoryTracker.RecordBuy(instId, price, size, ordId)
 		}
-		// Market-making: SELL at +0.3% (covers 0.16% fees, nets ~0.14% profit)
-		counterPrice = price.Mul(decimal.NewFromFloat(1.003))
+		// Market-making: SELL at +1.0% (wider spread for altcoin volatility)
+		counterPrice = price.Mul(decimal.NewFromFloat(1.01))
 	case "sell":
 		// SELL filled → place BUY at fillPrice - 0.2% (fast cycle, small profit)
 		counterSide = models.SideBuy
 		if h.inventoryTracker != nil {
 			h.inventoryTracker.ClearPosition(instId)
 		}
-		counterPrice = price.Mul(decimal.NewFromFloat(0.998))
+		counterPrice = price.Mul(decimal.NewFromFloat(0.99))
 	default:
 		h.logger.LogError("unknown fill side", map[string]string{
 			"side": side,

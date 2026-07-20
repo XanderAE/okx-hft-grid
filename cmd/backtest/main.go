@@ -21,10 +21,13 @@ type Candle struct {
 	Vol       float64
 }
 
-// InstrumentConfig holds per-instrument parameters.
-type InstrumentConfig struct {
-	InstID   string
-	TickSize float64
+// Tick represents a simulated market tick derived from a candle.
+type Tick struct {
+	Price   float64
+	BestBid float64
+	BestAsk float64
+	High    float64
+	Low     float64
 }
 
 // Trade records a completed round-trip trade.
@@ -35,43 +38,383 @@ type Trade struct {
 	QtyAfterFee float64
 	PnL         float64
 	HoldTicks   int
-	ExitType    string // "profit", "stopped", "timedout", "skewed"
+	ExitType    string
+}
+
+// BacktestParams holds the tunable parameters for a single backtest run.
+type BacktestParams struct {
+	Spread     float64 // e.g., 0.003 for 0.3%
+	StopLoss   float64 // e.g., 0.015 for 1.5%
+	MomentumOn bool
+}
+
+// BacktestResult holds the outcome of a single backtest run.
+type BacktestResult struct {
+	Params       BacktestParams
+	TotalTrades  int
+	WinRate      float64
+	TotalPnL     float64
+	MaxDrawdown  float64
+	TradesPerDay float64
+	StopCount    int
 }
 
 const (
 	fee          = 0.0008
 	tradeSize    = 50.0
 	warmupTicks  = 4
-	stopLossPct  = 0.015
-	maxHoldTicks = 720 // >12h at 30s ticks
+	maxHoldTicks = 720 // 12h at 1-min ticks
+	feeFloor     = 0.002 // minimum sell target margin (0.2%)
 )
 
 func main() {
-	instruments := []InstrumentConfig{
-		{InstID: "DOGE-USDT", TickSize: 0.00001},
-		{InstID: "WIF-USDT", TickSize: 0.0001},
+	instID := "BTC-USDT"
+	tickSize := 0.1
+
+	fmt.Printf("Fetching candle data for %s...\n", instID)
+	candles, err := fetchCandles(instID, 10080)
+	if err != nil {
+		fmt.Printf("Error fetching candles for %s: %v\n", instID, err)
+		return
+	}
+	fmt.Printf("Fetched %d candles for %s\n\n", len(candles), instID)
+	if len(candles) < 10 {
+		fmt.Printf("Not enough candle data for %s\n", instID)
+		return
 	}
 
-	for _, inst := range instruments {
-		fmt.Printf("Fetching candle data for %s...\n", inst.InstID)
-		candles, err := fetchCandles(inst.InstID, 10080)
-		if err != nil {
-			fmt.Printf("Error fetching candles for %s: %v\n", inst.InstID, err)
+	// Generate ticks once
+	ticks := make([]Tick, len(candles))
+	for i, c := range candles {
+		ticks[i] = Tick{
+			Price:   c.Close,
+			BestBid: c.Close,
+			BestAsk: c.Close,
+			High:    c.High,
+			Low:     c.Low,
+		}
+	}
+
+	startTime := time.UnixMilli(candles[0].Timestamp)
+	endTime := time.UnixMilli(candles[len(candles)-1].Timestamp)
+	days := endTime.Sub(startTime).Hours() / 24.0
+
+	// Parameter grid
+	spreads := []float64{0.002, 0.003, 0.004, 0.005, 0.007, 0.01, 0.015, 0.02}
+	stops := []float64{0.005, 0.01, 0.015, 0.02, 0.03, 0.05, 9.99}
+	momentums := []bool{true, false}
+
+	totalCombinations := len(spreads) * len(stops) * len(momentums)
+	fmt.Printf("Running %d parameter combinations...\n", totalCombinations)
+
+	var results []BacktestResult
+	done := 0
+
+	for _, spread := range spreads {
+		for _, stop := range stops {
+			for _, mom := range momentums {
+				params := BacktestParams{
+					Spread:     spread,
+					StopLoss:   stop,
+					MomentumOn: mom,
+				}
+				result := runBacktest(params, ticks, tickSize, days)
+				results = append(results, result)
+				done++
+				if done%20 == 0 {
+					fmt.Printf("  ... %d/%d complete\n", done, totalCombinations)
+				}
+			}
+		}
+	}
+
+	// Sort by TotalPnL descending (best first)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].TotalPnL > results[j].TotalPnL
+	})
+
+	// Print results
+	fmt.Printf("\n=== PARAMETER OPTIMIZATION: %s (%.0f days) ===\n", instID, days)
+	fmt.Printf("Period: %s to %s\n", startTime.UTC().Format("2006-01-02 15:04"), endTime.UTC().Format("2006-01-02 15:04"))
+	fmt.Printf("Tested %d combinations\n\n", totalCombinations)
+
+	fmt.Printf("TOP 10 RESULTS (sorted by P&L):\n")
+	fmt.Printf("#   Spread  StopLoss  Momentum  Trades  WinRate  P&L       MaxDD     Trades/Day  Stops\n")
+	top := 10
+	if len(results) < top {
+		top = len(results)
+	}
+	for i := 0; i < top; i++ {
+		r := results[i]
+		momStr := "ON "
+		if !r.Params.MomentumOn {
+			momStr = "OFF"
+		}
+		stopStr := fmt.Sprintf("%.2f%%", r.Params.StopLoss*100)
+		if r.Params.StopLoss > 5.0 {
+			stopStr = "never "
+		}
+		fmt.Printf("%-3d %5.2f%%  %6s    %s       %5d   %5.1f%%  %+8.4f  $%7.4f   %6.1f      %d\n",
+			i+1,
+			r.Params.Spread*100,
+			stopStr,
+			momStr,
+			r.TotalTrades,
+			r.WinRate,
+			r.TotalPnL,
+			r.MaxDrawdown,
+			r.TradesPerDay,
+			r.StopCount,
+		)
+	}
+
+	// Print worst 3
+	fmt.Printf("\nWORST 3 RESULTS (avoid these):\n")
+	fmt.Printf("#   Spread  StopLoss  Momentum  Trades  WinRate  P&L       MaxDD     Trades/Day  Stops\n")
+	worst := 3
+	if len(results) < worst {
+		worst = len(results)
+	}
+	for i := 0; i < worst; i++ {
+		idx := len(results) - 1 - i
+		r := results[idx]
+		momStr := "ON "
+		if !r.Params.MomentumOn {
+			momStr = "OFF"
+		}
+		stopStr := fmt.Sprintf("%.2f%%", r.Params.StopLoss*100)
+		if r.Params.StopLoss > 5.0 {
+			stopStr = "never "
+		}
+		fmt.Printf("%-3d %5.2f%%  %6s    %s       %5d   %5.1f%%  %+8.4f  $%7.4f   %6.1f      %d\n",
+			i+1,
+			r.Params.Spread*100,
+			stopStr,
+			momStr,
+			r.TotalTrades,
+			r.WinRate,
+			r.TotalPnL,
+			r.MaxDrawdown,
+			r.TradesPerDay,
+			r.StopCount,
+		)
+	}
+}
+
+// runBacktest runs the full strategy simulation with the given parameters.
+func runBacktest(params BacktestParams, ticks []Tick, tickSize float64, days float64) BacktestResult {
+	var (
+		trades       []Trade
+		prices       []float64
+		holding      bool
+		buyPrice     float64
+		quantity     float64
+		qtyAfterFee  float64
+		holdTicks    int
+		balance      = 100.0
+		maxBalance   = 100.0
+		maxDrawdown  = 0.0
+		pendingBuy   bool
+		pendingBuyPx float64
+		stopCount    int
+	)
+
+	for i, tick := range ticks {
+		currentPrice := tick.Price
+		prices = append(prices, currentPrice)
+
+		if i < warmupTicks {
 			continue
 		}
-		fmt.Printf("Fetched %d candles for %s\n", len(candles), inst.InstID)
-		if len(candles) < 10 {
-			fmt.Printf("Not enough candle data for %s, skipping\n", inst.InstID)
+
+		if holding {
+			holdTicks++
+
+			// Hard stop-loss
+			if currentPrice <= buyPrice*(1-params.StopLoss) {
+				sellPrice := currentPrice
+				pnl := sellPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
+				balance += pnl
+				trades = append(trades, Trade{
+					BuyPrice:    buyPrice,
+					SellPrice:   sellPrice,
+					Quantity:    quantity,
+					QtyAfterFee: qtyAfterFee,
+					PnL:         pnl,
+					HoldTicks:   holdTicks,
+					ExitType:    "stopped",
+				})
+				stopCount++
+				holding = false
+				pendingBuy = false
+				trackDrawdown(&balance, &maxBalance, &maxDrawdown)
+				continue
+			}
+
+			// Sell-target decay schedule scaled with spread
+			var sellTarget float64
+			exitType := "profit"
+
+			if holdTicks > maxHoldTicks {
+				// Force market sell after 12h
+				sellTarget = currentPrice
+				exitType = "timedout"
+			} else if currentPrice < buyPrice {
+				// Price underwater: skewed exit at spread * 0.5
+				skewedMargin := params.Spread * 0.5
+				if skewedMargin < feeFloor {
+					skewedMargin = feeFloor
+				}
+				sellTarget = buyPrice * (1 + skewedMargin)
+				exitType = "skewed"
+			} else if holdTicks <= 60 {
+				// 0-1h: full spread
+				sellTarget = buyPrice * (1 + params.Spread)
+			} else if holdTicks <= 360 {
+				// 1-6h: spread * 0.8
+				margin := params.Spread * 0.8
+				if margin < feeFloor {
+					margin = feeFloor
+				}
+				sellTarget = buyPrice * (1 + margin)
+			} else if holdTicks <= 720 {
+				// 6-12h: spread * 0.67
+				margin := params.Spread * 0.67
+				if margin < feeFloor {
+					margin = feeFloor
+				}
+				sellTarget = buyPrice * (1 + margin)
+			} else {
+				sellTarget = currentPrice
+				exitType = "timedout"
+			}
+
+			// Check fill
+			filled := false
+			if exitType == "timedout" && holdTicks > maxHoldTicks {
+				filled = true
+			} else if tick.High >= sellTarget {
+				filled = true
+			}
+
+			if filled {
+				actualSellPrice := sellTarget
+				if exitType == "timedout" {
+					actualSellPrice = currentPrice
+				}
+				pnl := actualSellPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
+				balance += pnl
+				trades = append(trades, Trade{
+					BuyPrice:    buyPrice,
+					SellPrice:   actualSellPrice,
+					Quantity:    quantity,
+					QtyAfterFee: qtyAfterFee,
+					PnL:         pnl,
+					HoldTicks:   holdTicks,
+					ExitType:    exitType,
+				})
+				holding = false
+				pendingBuy = false
+				trackDrawdown(&balance, &maxBalance, &maxDrawdown)
+			}
 			continue
 		}
-		runBacktest(inst, candles)
-		fmt.Println()
+
+		// Check pending buy fill
+		if pendingBuy {
+			if tick.Low <= pendingBuyPx {
+				buyPrice = pendingBuyPx
+				quantity = tradeSize / buyPrice
+				qtyAfterFee = quantity * (1 - fee)
+				holding = true
+				holdTicks = 0
+				pendingBuy = false
+				continue
+			}
+		}
+
+		// BUY decision: momentum filter
+		if params.MomentumOn && len(prices) >= 3 {
+			n := len(prices)
+			if prices[n-1] < prices[n-2] && prices[n-2] < prices[n-3] {
+				pendingBuy = false
+				continue
+			}
+		}
+
+		// Place BUY limit at bestBid - 1 tick
+		pendingBuyPx = tick.BestBid - tickSize
+		pendingBuy = true
+
+		// Immediately check fill on this tick
+		if tick.Low <= pendingBuyPx {
+			buyPrice = pendingBuyPx
+			quantity = tradeSize / buyPrice
+			qtyAfterFee = quantity * (1 - fee)
+			holding = true
+			holdTicks = 0
+			pendingBuy = false
+		}
+	}
+
+	// Force close at end if still holding
+	if holding {
+		lastPrice := ticks[len(ticks)-1].Price
+		pnl := lastPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
+		balance += pnl
+		trades = append(trades, Trade{
+			BuyPrice:    buyPrice,
+			SellPrice:   lastPrice,
+			Quantity:    quantity,
+			QtyAfterFee: qtyAfterFee,
+			PnL:         pnl,
+			HoldTicks:   holdTicks,
+			ExitType:    "timedout",
+		})
+		trackDrawdown(&balance, &maxBalance, &maxDrawdown)
+	}
+
+	// Compute metrics
+	totalTrades := len(trades)
+	winRate := 0.0
+	if totalTrades > 0 {
+		wins := 0
+		for _, t := range trades {
+			if t.PnL > 0 {
+				wins++
+			}
+		}
+		winRate = float64(wins) / float64(totalTrades) * 100
+	}
+
+	totalPnL := balance - 100.0
+	tradesPerDay := 0.0
+	if days > 0 {
+		tradesPerDay = float64(totalTrades) / days
+	}
+
+	return BacktestResult{
+		Params:       params,
+		TotalTrades:  totalTrades,
+		WinRate:      winRate,
+		TotalPnL:     totalPnL,
+		MaxDrawdown:  maxDrawdown,
+		TradesPerDay: tradesPerDay,
+		StopCount:    stopCount,
+	}
+}
+
+func trackDrawdown(balance *float64, maxBalance *float64, maxDrawdown *float64) {
+	if *balance > *maxBalance {
+		*maxBalance = *balance
+	}
+	dd := *maxBalance - *balance
+	if dd > *maxDrawdown {
+		*maxDrawdown = dd
 	}
 }
 
 // fetchCandles retrieves historical 1m candles from OKX public API.
-// Uses /market/history-candles for deeper history, then /market/candles for recent data.
-// OKX returns newest first, so we paginate with "after" parameter (timestamp to get candles before).
 func fetchCandles(instID string, target int) ([]Candle, error) {
 	var allCandles []Candle
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -86,7 +429,6 @@ func fetchCandles(instID string, target int) ([]Candle, error) {
 
 	// Then: get historical candles from /market/history-candles going further back
 	if len(allCandles) > 0 && len(allCandles) < target {
-		// Find oldest timestamp from what we have
 		oldest := allCandles[0].Timestamp
 		for _, c := range allCandles {
 			if c.Timestamp < oldest {
@@ -160,7 +502,7 @@ func fetchFromEndpoint(client *http.Client, instID, baseURL, after string, targe
 			return nil, fmt.Errorf("OKX API error: code=%s msg=%s", result.Code, result.Msg)
 		}
 		if len(result.Data) == 0 {
-			break // no more data available
+			break
 		}
 
 		batchSize := len(result.Data)
@@ -185,320 +527,18 @@ func fetchFromEndpoint(client *http.Client, instID, baseURL, after string, targe
 			})
 		}
 
-		// OKX returns newest first; last element in batch is oldest.
-		// "after" = oldest timestamp to get even older candles next iteration.
 		lastTS := result.Data[len(result.Data)-1][0]
 		after = lastTS
 
-		// If we got fewer than requested, no more history
 		if batchSize < 300 {
 			break
 		}
 
-		// Rate limit: be polite to OKX
 		time.Sleep(250 * time.Millisecond)
 	}
 
 	return allCandles, nil
 }
 
-// Tick represents a simulated market tick derived from a candle.
-type Tick struct {
-	Price   float64 // price at this moment (open or close)
-	BestBid float64 // simulated best bid
-	BestAsk float64 // simulated best ask
-	High    float64 // candle high (for sell fill simulation)
-	Low     float64 // candle low (for buy fill simulation)
-}
-
-// runBacktest runs the full strategy simulation on the given candles.
-func runBacktest(inst InstrumentConfig, candles []Candle) {
-	// Generate ticks: 1 per candle at close price.
-	// High/Low retained for fill simulation.
-	// This gives 1 tick per minute, approximately matching the 30s rebalancer interval.
-	var ticks []Tick
-	for _, c := range candles {
-		ticks = append(ticks, Tick{
-			Price:   c.Close,
-			BestBid: c.Close,
-			BestAsk: c.Close,
-			High:    c.High,
-			Low:     c.Low,
-		})
-	}
-
-	startTime := time.UnixMilli(candles[0].Timestamp)
-	endTime := time.UnixMilli(candles[len(candles)-1].Timestamp)
-
-	// State
-	var (
-		trades         []Trade
-		prices         []float64
-		holding        bool
-		buyPrice       float64
-		quantity       float64
-		qtyAfterFee   float64
-		holdTicks      int
-		downSkips      int
-		balance        = 100.0
-		maxBalance     = 100.0
-		maxDrawdown    = 0.0
-		totalHoldTicks int
-		pendingBuy     bool
-		pendingBuyPx   float64
-	)
-
-	for i, tick := range ticks {
-		currentPrice := tick.Price
-
-		// Track prices for momentum
-		prices = append(prices, currentPrice)
-
-		// Phase 1: Warmup
-		if i < warmupTicks {
-			continue
-		}
-
-		if holding {
-			holdTicks++
-
-			// Phase 5: Hard stop
-			if currentPrice <= buyPrice*(1-stopLossPct) {
-				sellPrice := currentPrice
-				pnl := sellPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
-				balance += pnl
-				trades = append(trades, Trade{
-					BuyPrice:    buyPrice,
-					SellPrice:   sellPrice,
-					Quantity:    quantity,
-					QtyAfterFee: qtyAfterFee,
-					PnL:         pnl,
-					HoldTicks:   holdTicks,
-					ExitType:    "stopped",
-				})
-				totalHoldTicks += holdTicks
-				holding = false
-				pendingBuy = false
-				trackDrawdown(&balance, &maxBalance, &maxDrawdown)
-				continue
-			}
-
-			// Phase 4: SELL management
-			var sellTarget float64
-			exitType := "profit"
-
-			if holdTicks > maxHoldTicks {
-				// Force market sell after 12h
-				sellTarget = currentPrice
-				exitType = "timedout"
-			} else if currentPrice < buyPrice {
-				// Price underwater: skewed exit at +0.15%
-				sellTarget = buyPrice * 1.0015
-				exitType = "skewed"
-			} else if holdTicks <= 60 {
-				// 0-1h: +0.3%
-				sellTarget = buyPrice * 1.003
-			} else if holdTicks <= 360 {
-				// 1-6h: +0.25%
-				sellTarget = buyPrice * 1.0025
-			} else if holdTicks <= 720 {
-				// 6-12h: +0.2%
-				sellTarget = buyPrice * 1.002
-			} else {
-				sellTarget = currentPrice
-				exitType = "timedout"
-			}
-
-			// Check fill: for timed-out we force fill; otherwise candle high >= sellTarget
-			filled := false
-			if exitType == "timedout" && holdTicks > maxHoldTicks {
-				filled = true
-			} else if tick.High >= sellTarget {
-				filled = true
-			}
-
-			if filled {
-				actualSellPrice := sellTarget
-				if exitType == "timedout" {
-					actualSellPrice = currentPrice
-				}
-				pnl := actualSellPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
-				balance += pnl
-				trades = append(trades, Trade{
-					BuyPrice:    buyPrice,
-					SellPrice:   actualSellPrice,
-					Quantity:    quantity,
-					QtyAfterFee: qtyAfterFee,
-					PnL:         pnl,
-					HoldTicks:   holdTicks,
-					ExitType:    exitType,
-				})
-				totalHoldTicks += holdTicks
-				holding = false
-				pendingBuy = false
-				trackDrawdown(&balance, &maxBalance, &maxDrawdown)
-			}
-			continue
-		}
-
-		// Check if pending buy fills on this tick
-		if pendingBuy {
-			// BUY fills if candle low <= our buy price
-			if tick.Low <= pendingBuyPx {
-				// Phase 3: BUY fill
-				buyPrice = pendingBuyPx
-				quantity = tradeSize / buyPrice
-				qtyAfterFee = quantity * (1 - fee)
-				holding = true
-				holdTicks = 0
-				pendingBuy = false
-				continue
-			}
-		}
-
-		// Phase 2: BUY decision (not holding)
-		// Momentum filter: if last 3 prices are declining → skip
-		if len(prices) >= 3 {
-			n := len(prices)
-			if prices[n-1] < prices[n-2] && prices[n-2] < prices[n-3] {
-				downSkips++
-				pendingBuy = false
-				continue
-			}
-		}
-
-		// Place BUY limit at bestBid - 1 tick
-		pendingBuyPx = tick.BestBid - inst.TickSize
-		pendingBuy = true
-
-		// Immediately check if it fills on this same tick
-		if tick.Low <= pendingBuyPx {
-			buyPrice = pendingBuyPx
-			quantity = tradeSize / buyPrice
-			qtyAfterFee = quantity * (1 - fee)
-			holding = true
-			holdTicks = 0
-			pendingBuy = false
-		}
-	}
-
-	// If still holding at end, force close at last price
-	if holding {
-		lastPrice := ticks[len(ticks)-1].Price
-		pnl := lastPrice*qtyAfterFee*(1-fee) - buyPrice*quantity
-		balance += pnl
-		trades = append(trades, Trade{
-			BuyPrice:    buyPrice,
-			SellPrice:   lastPrice,
-			Quantity:    quantity,
-			QtyAfterFee: qtyAfterFee,
-			PnL:         pnl,
-			HoldTicks:   holdTicks,
-			ExitType:    "timedout",
-		})
-		totalHoldTicks += holdTicks
-		trackDrawdown(&balance, &maxBalance, &maxDrawdown)
-	}
-
-	// Generate report
-	printReport(inst.InstID, startTime, endTime, trades, downSkips, totalHoldTicks, balance, maxDrawdown)
-}
-
-func trackDrawdown(balance *float64, maxBalance *float64, maxDrawdown *float64) {
-	if *balance > *maxBalance {
-		*maxBalance = *balance
-	}
-	dd := *maxBalance - *balance
-	if dd > *maxDrawdown {
-		*maxDrawdown = dd
-	}
-}
-
-func printReport(instID string, start, end time.Time, trades []Trade, downSkips int, totalHoldTicks int, finalBalance, maxDrawdown float64) {
-	fmt.Printf("\n=== BACKTEST REPORT: %s (7 days) ===\n", instID)
-	fmt.Printf("Period: %s to %s\n", start.UTC().Format("2006-01-02 15:04"), end.UTC().Format("2006-01-02 15:04"))
-	fmt.Printf("Starting balance: $100.00\n\n")
-
-	totalTrades := len(trades)
-	var profitable, stopped, timedout, skewed int
-	var profitSum, stoppedSum, timedoutSum float64
-
-	for _, t := range trades {
-		switch t.ExitType {
-		case "profit":
-			profitable++
-			profitSum += t.PnL
-		case "stopped":
-			stopped++
-			stoppedSum += t.PnL
-		case "timedout":
-			timedout++
-			timedoutSum += t.PnL
-		case "skewed":
-			skewed++
-			profitSum += t.PnL // count skewed P&L with profitable trades
-		}
-	}
-
-	fmt.Printf("Total trades completed: %d\n", totalTrades)
-	if profitable > 0 {
-		fmt.Printf("  - Profitable: %d (avg +$%.4f per trade)\n", profitable, profitSum/float64(profitable))
-	} else {
-		fmt.Printf("  - Profitable: 0\n")
-	}
-	if stopped > 0 {
-		fmt.Printf("  - Stopped out (1.5%%): %d (avg -$%.4f per trade)\n", stopped, math.Abs(stoppedSum/float64(stopped)))
-	} else {
-		fmt.Printf("  - Stopped out (1.5%%): 0\n")
-	}
-	if timedout > 0 {
-		avgTO := timedoutSum / float64(timedout)
-		sign := "+"
-		if avgTO < 0 {
-			sign = "-"
-			avgTO = math.Abs(avgTO)
-		}
-		fmt.Printf("  - Timed out (12h): %d (avg %s$%.4f per trade)\n", timedout, sign, avgTO)
-	} else {
-		fmt.Printf("  - Timed out (12h): 0\n")
-	}
-	fmt.Printf("  - Skewed exit (+0.15%%): %d\n\n", skewed)
-
-	fmt.Printf("Momentum filter:\n")
-	fmt.Printf("  - Downtrend skips: %d times\n", downSkips)
-	fmt.Printf("  - Trades avoided by filter: ~%d\n\n", downSkips/3)
-
-	totalPnL := finalBalance - 100.0
-	winRate := 0.0
-	if totalTrades > 0 {
-		wins := 0
-		for _, t := range trades {
-			if t.PnL > 0 {
-				wins++
-			}
-		}
-		winRate = float64(wins) / float64(totalTrades) * 100
-	}
-
-	avgHoldMin := 0.0
-	if totalTrades > 0 {
-		// Each tick = 1 minute (one candle per tick)
-		avgHoldMin = float64(totalHoldTicks) / float64(totalTrades)
-	}
-
-	days := end.Sub(start).Hours() / 24.0
-	tradesPerDay := 0.0
-	if days > 0 {
-		tradesPerDay = float64(totalTrades) / days
-	}
-
-	fmt.Printf("Performance:\n")
-	fmt.Printf("  - Total P&L: $%.4f\n", totalPnL)
-	fmt.Printf("  - Win rate: %.1f%%\n", winRate)
-	fmt.Printf("  - Max drawdown: $%.4f\n", maxDrawdown)
-	fmt.Printf("  - Avg holding time: %.1f minutes\n", avgHoldMin)
-	fmt.Printf("  - Trades per day: %.1f\n\n", tradesPerDay)
-
-	fmt.Printf("Final balance: $%.4f\n", finalBalance)
-	fmt.Printf("Return: %.2f%%\n", (finalBalance-100.0)/100.0*100)
-}
+// Suppress unused import warning for math
+var _ = math.Abs

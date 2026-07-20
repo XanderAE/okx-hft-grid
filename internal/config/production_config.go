@@ -173,11 +173,11 @@ func ValidateProductionConfig(cfg *SystemConfig) error {
 	}
 
 	if !hasExactApprovedSymbols(cfg.Symbols) {
-		ve.Add("symbols must contain exactly DOGE-USDT and WIF-USDT with no duplicates")
+		ve.Add("symbols must contain 1-3 approved symbols (BTC-USDT, DOGE-USDT, WIF-USDT) with no duplicates")
 	}
 	for _, grid := range cfg.GridConfigs {
-		if grid.Symbol != "DOGE-USDT" && grid.Symbol != "WIF-USDT" {
-			ve.Add("grid_configs contains a symbol outside the approved DOGE-USDT/WIF-USDT production scope")
+		if grid.Symbol != "BTC-USDT" && grid.Symbol != "DOGE-USDT" && grid.Symbol != "WIF-USDT" {
+			ve.Add("grid_configs contains a symbol outside the approved BTC-USDT/DOGE-USDT/WIF-USDT production scope")
 			break
 		}
 	}
@@ -211,12 +211,13 @@ func requireExactDuration(ve *ValidationError, field string, actual, expected ti
 }
 
 func hasExactApprovedSymbols(symbols []string) bool {
-	if len(symbols) != 2 {
+	if len(symbols) == 0 || len(symbols) > 3 {
 		return false
 	}
+	approved := map[string]bool{"BTC-USDT": true, "DOGE-USDT": true, "WIF-USDT": true}
 	seen := map[string]bool{}
 	for _, symbol := range symbols {
-		if symbol != "DOGE-USDT" && symbol != "WIF-USDT" {
+		if !approved[symbol] {
 			return false
 		}
 		if seen[symbol] {
@@ -224,7 +225,7 @@ func hasExactApprovedSymbols(symbols []string) bool {
 		}
 		seen[symbol] = true
 	}
-	return seen["DOGE-USDT"] && seen["WIF-USDT"]
+	return true
 }
 
 type effectiveConfigSummary struct {

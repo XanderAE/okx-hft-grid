@@ -828,8 +828,8 @@ func (app *application) inventoryRebalanceLoop() {
 			}
 			currentPrice := tickerObs.Last
 
-			// Hard stop check (1.5% loss)
-			if app.inventoryTracker.ShouldHardStop(cfg.Symbol, currentPrice, decimal.NewFromFloat(0.015)) {
+			// Hard stop check (3% loss)
+			if app.inventoryTracker.ShouldHardStop(cfg.Symbol, currentPrice, decimal.NewFromFloat(0.03)) {
 				app.logger.LogWarn("HARD STOP: selling at market", map[string]string{
 					"symbol":    cfg.Symbol,
 					"buy_price": pos.BuyPrice.String(),
@@ -871,9 +871,9 @@ func (app *application) inventoryRebalanceLoop() {
 			// Record price for momentum
 			app.momentumFilter.RecordPrice(cfg.Symbol, currentPrice)
 
-			// Skewed spread: if underwater, use +0.15% to exit faster
+			// Skewed spread: if underwater, use +0.5% to exit faster
 			if currentPrice.LessThan(pos.BuyPrice) {
-				skewedPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(1.0015))
+				skewedPrice := pos.BuyPrice.Mul(decimal.NewFromFloat(1.005))
 				precision := getPricePrecision(cfg.Symbol)
 				skewedPrice = skewedPrice.Round(int32(precision))
 				app.logger.LogInfo("SKEWED: position underwater, tight spread", map[string]string{
@@ -922,9 +922,9 @@ func (app *application) inventoryRebalanceLoop() {
 				// Keep at +0.3% (don't interfere with fill handler's initial order)
 				continue
 			case elapsed < 6*time.Hour:
-				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.0025)) // +0.25%
+				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.008)) // +0.8% (spread×0.8)
 			default:
-				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.002)) // +0.2% (floor)
+				newSellPrice = pos.BuyPrice.Mul(decimal.NewFromFloat(1.0067)) // +0.67% (spread×0.67)
 			}
 
 			// Don't go below fee floor (+0.2% = still profitable after 0.16% round-trip fees)
