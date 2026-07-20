@@ -398,6 +398,9 @@ func (app *application) startup() error {
 	app.ownershipSafeCleanup()
 	app.logger.LogInfo("ownership-safe startup cleanup completed", nil)
 
+	// Load existing positions from OKX balance into inventory tracker
+	app.loadExistingPositions()
+
 	// ---- Phase 9: Fresh public ticker ----
 	app.logger.LogInfo("connecting to exchange WebSocket", nil)
 	// Set handler BEFORE Connect so readLoop goroutine sees it without a race.
@@ -731,6 +734,11 @@ func (app *application) inventoryRebalanceLoop() {
 					continue
 				}
 
+				// Inventory cap: don't buy if already at max value
+				if app.inventoryTracker.IsInventoryFull(cfg.Symbol) {
+					continue
+				}
+
 				// Check existing pending orders
 				ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
 				pending, _ := app.gateway.ListPendingOrders(ctx2, cfg.Symbol)
@@ -762,11 +770,12 @@ func (app *application) inventoryRebalanceLoop() {
 				if !hasBuyOrder {
 					// Place fresh BUY
 					req := &execution.OrderRequest{
-						Symbol:    cfg.Symbol,
-						Side:      models.SideBuy,
-						OrderType: models.OrderTypePostOnly,
-						Price:     idealBuyPrice,
-						Quantity:  cfg.OrderSize,
+						Symbol:        cfg.Symbol,
+						Side:          models.SideBuy,
+						OrderType:     models.OrderTypePostOnly,
+						Price:         idealBuyPrice,
+						Quantity:      cfg.OrderSize,
+						ClientOrderID: generateBotOrderID(cfg.Symbol, "buy"),
 					}
 					app.apiClient.PlaceOrder(req)
 					app.logger.LogInfo("REBALANCE: placed new BUY order", map[string]string{
@@ -787,11 +796,12 @@ func (app *application) inventoryRebalanceLoop() {
 
 						// Place new BUY at current bestBid - 1 tick
 						req := &execution.OrderRequest{
-							Symbol:    cfg.Symbol,
-							Side:      models.SideBuy,
-							OrderType: models.OrderTypePostOnly,
-							Price:     idealBuyPrice,
-							Quantity:  cfg.OrderSize,
+							Symbol:        cfg.Symbol,
+							Side:          models.SideBuy,
+							OrderType:     models.OrderTypePostOnly,
+							Price:         idealBuyPrice,
+							Quantity:      cfg.OrderSize,
+							ClientOrderID: generateBotOrderID(cfg.Symbol, "buy"),
 						}
 						app.apiClient.PlaceOrder(req)
 						app.logger.LogInfo("REBALANCE: adjusted BUY order (price drifted >0.1%)", map[string]string{
@@ -827,10 +837,31 @@ func (app *application) inventoryRebalanceLoop() {
 				})
 				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
 				req := &execution.OrderRequest{
-					Symbol:    cfg.Symbol,
-					Side:      models.SideSell,
-					OrderType: models.OrderTypeMarket,
-					Quantity:  qty,
+					Symbol:        cfg.Symbol,
+					Side:          models.SideSell,
+					OrderType:     models.OrderTypeMarket,
+					Quantity:      qty,
+					ClientOrderID: generateBotOrderID(cfg.Symbol, "sell"),
+				}
+				app.apiClient.PlaceOrder(req)
+				app.inventoryTracker.ClearPosition(cfg.Symbol)
+				continue
+			}
+
+			elapsed := time.Since(pos.BuyTime)
+
+			// Force market sell after 12 hours
+			if elapsed > 12*time.Hour {
+				app.logger.LogWarn("DECAY: force market sell after 12h", map[string]string{
+					"symbol": cfg.Symbol,
+				})
+				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
+				req := &execution.OrderRequest{
+					Symbol:        cfg.Symbol,
+					Side:          models.SideSell,
+					OrderType:     models.OrderTypeMarket,
+					Quantity:      qty,
+					ClientOrderID: generateBotOrderID(cfg.Symbol, "sell"),
 				}
 				app.apiClient.PlaceOrder(req)
 				app.inventoryTracker.ClearPosition(cfg.Symbol)
@@ -869,32 +900,14 @@ func (app *application) inventoryRebalanceLoop() {
 				}
 				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
 				skewReq := &execution.OrderRequest{
-					Symbol:    cfg.Symbol,
-					Side:      models.SideSell,
-					OrderType: models.OrderTypePostOnly,
-					Price:     skewedPrice,
-					Quantity:  qty,
+					Symbol:        cfg.Symbol,
+					Side:          models.SideSell,
+					OrderType:     models.OrderTypePostOnly,
+					Price:         skewedPrice,
+					Quantity:      qty,
+					ClientOrderID: generateBotOrderID(cfg.Symbol, "sell"),
 				}
 				app.apiClient.PlaceOrder(skewReq)
-				continue
-			}
-
-			elapsed := time.Since(pos.BuyTime)
-
-			// Force market sell after 12 hours
-			if elapsed > 12*time.Hour {
-				app.logger.LogWarn("DECAY: force market sell after 12h", map[string]string{
-					"symbol": cfg.Symbol,
-				})
-				qty := pos.Quantity.Mul(decimal.NewFromInt(1).Sub(cfg.FeeRate))
-				req := &execution.OrderRequest{
-					Symbol:    cfg.Symbol,
-					Side:      models.SideSell,
-					OrderType: models.OrderTypeMarket,
-					Quantity:  qty,
-				}
-				app.apiClient.PlaceOrder(req)
-				app.inventoryTracker.ClearPosition(cfg.Symbol)
 				continue
 			}
 
@@ -952,11 +965,12 @@ func (app *application) inventoryRebalanceLoop() {
 
 			// Place new SELL at decayed price
 			req := &execution.OrderRequest{
-				Symbol:    cfg.Symbol,
-				Side:      models.SideSell,
-				OrderType: models.OrderTypePostOnly,
-				Price:     newSellPrice,
-				Quantity:  qty,
+				Symbol:        cfg.Symbol,
+				Side:          models.SideSell,
+				OrderType:     models.OrderTypePostOnly,
+				Price:         newSellPrice,
+				Quantity:      qty,
+				ClientOrderID: generateBotOrderID(cfg.Symbol, "sell"),
 			}
 			_, err = app.apiClient.PlaceOrder(req)
 			if err != nil {
@@ -1777,6 +1791,10 @@ func containsStr(s, substr string) bool {
 	return false
 }
 
+func generateBotOrderID(symbol, side string) string {
+	return fmt.Sprintf("tb1-%s-%s-%d", symbol, side, time.Now().UnixNano())
+}
+
 // getTickSize returns the minimum price increment (tick) for a given symbol.
 // Used for market-making: BUY at bestBid - 1 tick, SELL decay by 1 tick per interval.
 func getTickSize(symbol string) decimal.Decimal {
@@ -1827,6 +1845,65 @@ func (app *application) getCurrentPriceLegacy(symbol string) (decimal.Decimal, e
 	}
 
 	return price, nil
+}
+
+func (app *application) loadExistingPositions() {
+	resp, err := app.apiClient.DoRequest("GET", "/api/v5/account/balance", nil)
+	if err != nil {
+		app.logger.LogWarn("loadExistingPositions: failed", map[string]string{"error": err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	var balResp struct {
+		Code string `json:"code"`
+		Data []struct {
+			Details []struct {
+				Ccy       string `json:"ccy"`
+				AvailBal  string `json:"availBal"`
+				FrozenBal string `json:"frozenBal"`
+			} `json:"details"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(bodyBytes, &balResp); err != nil || balResp.Code != "0" || len(balResp.Data) == 0 {
+		return
+	}
+	for _, detail := range balResp.Data[0].Details {
+		if detail.Ccy == "USDT" {
+			continue
+		}
+		avail, _ := decimal.NewFromString(detail.AvailBal)
+		frozen, _ := decimal.NewFromString(detail.FrozenBal)
+		total := avail.Add(frozen)
+		if !total.IsPositive() {
+			continue
+		}
+		symbol := detail.Ccy + "-USDT"
+		configured := false
+		for _, cfg := range app.cfg.GridConfigs {
+			if cfg.Symbol == symbol {
+				configured = true
+				break
+			}
+		}
+		if !configured {
+			continue
+		}
+		if app.gateway != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ticker, tickErr := app.gateway.GetTicker(ctx, symbol)
+			cancel()
+			if tickErr == nil && ticker.Last.IsPositive() {
+				app.inventoryTracker.RecordBuy(symbol, ticker.Last, total, "pre-restart")
+				app.logger.LogInfo("loaded existing position", map[string]string{
+					"symbol": symbol, "qty": total.String(), "price": ticker.Last.String(),
+				})
+			}
+		}
+	}
 }
 
 // calculateAdaptiveGridRangeLegacy uses raw APIClient for backward compat with property tests.

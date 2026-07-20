@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/yourname/okx-hft-grid/internal/monitor"
@@ -126,12 +127,13 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 
 	// Place counter-order
 	req := &OrderRequest{
-		Symbol:    instId,
-		Side:      counterSide,
-		OrderType: models.OrderTypePostOnly,
-		Price:     counterPrice,
-		Quantity:  orderSize,
-		GridLevel: levelIdx,
+		Symbol:        instId,
+		Side:          counterSide,
+		OrderType:     models.OrderTypePostOnly,
+		Price:         counterPrice,
+		Quantity:      orderSize,
+		GridLevel:     levelIdx,
+		ClientOrderID: fmt.Sprintf("tb1-%s-%s-%d", instId, counterSide.String(), time.Now().UnixNano()),
 	}
 
 	result, err := h.apiClient.PlaceOrder(req)
