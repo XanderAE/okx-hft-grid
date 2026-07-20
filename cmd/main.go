@@ -398,8 +398,8 @@ func (app *application) startup() error {
 	app.ownershipSafeCleanup()
 	app.logger.LogInfo("ownership-safe startup cleanup completed", nil)
 
-	// Load existing positions from OKX balance into inventory tracker
-	// app.loadExistingPositions() // Disabled: causes phantom positions from dust balances
+	// Load existing positions from OKX balance into inventory tracker (dust filtered)
+	app.loadExistingPositions()
 
 	// ---- Phase 9: Fresh public ticker ----
 	app.logger.LogInfo("connecting to exchange WebSocket", nil)
@@ -1933,9 +1933,17 @@ func (app *application) loadExistingPositions() {
 			ticker, tickErr := app.gateway.GetTicker(ctx, symbol)
 			cancel()
 			if tickErr == nil && ticker.Last.IsPositive() {
+				posValue := total.Mul(ticker.Last)
+				// Skip dust: only register positions worth more than $5
+				if posValue.LessThan(decimal.NewFromInt(5)) {
+					app.logger.LogInfo("loadExistingPositions: skipping dust", map[string]string{
+						"symbol": symbol, "value": posValue.String(),
+					})
+					continue
+				}
 				app.inventoryTracker.RecordBuy(symbol, ticker.Last, total, "pre-restart")
 				app.logger.LogInfo("loaded existing position", map[string]string{
-					"symbol": symbol, "qty": total.String(), "price": ticker.Last.String(),
+					"symbol": symbol, "qty": total.String(), "price": ticker.Last.String(), "value": posValue.String(),
 				})
 			}
 		}
