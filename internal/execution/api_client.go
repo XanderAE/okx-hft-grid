@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net"
 	"net/http"
@@ -293,6 +294,9 @@ func (c *APIClient) PlaceOrder(req *OrderRequest) (*OrderResult, error) {
 			Error:   fmt.Sprintf("failed to read response: %v", err),
 		}, err
 	}
+
+	// TEMPORARY: log raw OKX response for debugging
+	log.Printf("[DEBUG] PlaceOrder raw response: %s", string(bodyBytes))
 
 	var okxResp OKXResponse
 	if err := json.Unmarshal(bodyBytes, &okxResp); err != nil {
