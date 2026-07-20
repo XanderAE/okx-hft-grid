@@ -553,8 +553,8 @@ func isBotOwnedClientOrderID(clOrdID string) bool {
 	}
 	// Bot namespace prefixes for deterministic client order IDs:
 	// "tb1" = TokyoBot v1 prefix used by outbox/rebalancer
-	// "pg-v1" = production grid v1 prefix (from exploration tests)
-	botPrefixes := []string{"tb1_", "tb1-", "pg-v1-"}
+	// "pgv1" = production grid v1 prefix (from exploration tests)
+	botPrefixes := []string{"tb1", "pgv1"}
 	for _, prefix := range botPrefixes {
 		if len(clOrdID) >= len(prefix) && clOrdID[:len(prefix)] == prefix {
 			return true
@@ -1822,14 +1822,13 @@ func containsStr(s, substr string) bool {
 }
 
 func generateBotOrderID(symbol, side string) string {
-	// OKX clOrdId rules: alphanumeric + underscore only, max 32 chars
-	// Format: tb1_B_xxxx (B=buy/S=sell, xxxx=timestamp suffix)
+	// OKX clOrdId: letters and digits ONLY, 1-32 chars
 	s := "b"
 	if side == "sell" {
 		s = "s"
 	}
-	ts := fmt.Sprintf("%d", time.Now().UnixNano()%1000000000000)
-	return fmt.Sprintf("tb1_%s_%s", s, ts)
+	ts := time.Now().UnixNano() % 10000000000
+	return fmt.Sprintf("tb1%s%d", s, ts)
 }
 
 // getTickSize returns the minimum price increment (tick) for a given symbol.

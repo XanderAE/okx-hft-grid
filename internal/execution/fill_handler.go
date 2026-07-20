@@ -133,7 +133,7 @@ func (h *GridFillHandler) OnFill(instId, side, fillPx, fillSz, ordId, state stri
 		Price:         counterPrice,
 		Quantity:      orderSize,
 		GridLevel:     levelIdx,
-		ClientOrderID: fmt.Sprintf("tb1_%s_%d", counterSide.String()[:1], time.Now().UnixNano()%1000000000000),
+		ClientOrderID: fmt.Sprintf("tb1%s%d", counterSide.String()[:1], time.Now().UnixNano()%10000000000),
 	}
 
 	result, err := h.apiClient.PlaceOrder(req)
