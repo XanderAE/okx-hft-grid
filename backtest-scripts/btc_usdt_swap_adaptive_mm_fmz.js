@@ -736,10 +736,12 @@ function submitTakeProfit(mark, now) {
     var result;
     try {
         if (position.direction === LONG) {
-            nativeSetDirection("closesell");
+            // 平多头仓：closebuy = 关闭 buy 方向开的仓位，然后用 Sell 执行
+            nativeSetDirection("closebuy");
             result = nativeSell(target, position.contracts);
         } else {
-            nativeSetDirection("closebuy");
+            // 平空头仓：closesell = 关闭 sell 方向开的仓位，然后用 Buy 执行
+            nativeSetDirection("closesell");
             result = nativeBuy(target, position.contracts);
         }
     } catch (error) {
@@ -965,10 +967,12 @@ function submitNativeMarketExit(decision, candle) {
     var result;
     try {
         if (position.direction === LONG) {
-            nativeSetDirection("closesell");
+            // 平多头仓：closebuy = 关闭 buy 方向开的仓位，然后用 Sell 执行市价退出
+            nativeSetDirection("closebuy");
             result = nativeSell(-1, contracts);
         } else {
-            nativeSetDirection("closebuy");
+            // 平空头仓：closesell = 关闭 sell 方向开的仓位，然后用 Buy 执行市价退出
+            nativeSetDirection("closesell");
             result = nativeBuy(-1, contracts);
         }
     } catch (error) {
