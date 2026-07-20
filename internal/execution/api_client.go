@@ -303,9 +303,16 @@ func (c *APIClient) PlaceOrder(req *OrderRequest) (*OrderResult, error) {
 	}
 
 	if okxResp.Code != "0" {
+		// Try to extract detailed sub-error from data field
+		errMsg := fmt.Sprintf("OKX error: code=%s, msg=%s", okxResp.Code, okxResp.Msg)
+		var orderData []OKXOrderData
+		if json.Unmarshal(okxResp.Data, &orderData) == nil && len(orderData) > 0 {
+			errMsg = fmt.Sprintf("OKX error: code=%s, msg=%s, sCode=%s, sMsg=%s",
+				okxResp.Code, okxResp.Msg, orderData[0].SCode, orderData[0].SMsg)
+		}
 		return &OrderResult{
 			Success: false,
-			Error:   fmt.Sprintf("OKX error: code=%s, msg=%s", okxResp.Code, okxResp.Msg),
+			Error:   errMsg,
 		}, nil
 	}
 
