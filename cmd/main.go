@@ -399,7 +399,7 @@ func (app *application) startup() error {
 	app.logger.LogInfo("ownership-safe startup cleanup completed", nil)
 
 	// Load existing positions from OKX balance into inventory tracker
-	app.loadExistingPositions()
+	// app.loadExistingPositions() // Disabled: causes phantom positions from dust balances
 
 	// ---- Phase 9: Fresh public ticker ----
 	app.logger.LogInfo("connecting to exchange WebSocket", nil)
