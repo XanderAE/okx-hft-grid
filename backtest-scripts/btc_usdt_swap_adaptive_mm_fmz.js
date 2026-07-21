@@ -16,16 +16,16 @@ var SlowLength = 20;
 var SlopeBars = 1;
 var MinConfidence = 0.0;
 var VolatilityLength = 20;
-var VolatilityPenalty = 40.0;
+var VolatilityPenalty = 20.0;
 var MaxLeverage = 3.0;
 var TickSize = 0.1;
 
 var PaperEquity = 10000.0;
-var RequestedNotionalUSDT = 50.0;
+var RequestedNotionalUSDT = 100.0;
 var MarginAllocationPercent = 10.0;
 // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
 
-var TakeProfitPercent = 0.08;        // 默认 0.08%，限制为 0.05%–0.08%
+var TakeProfitPercent = 0.20;        // 默认 0.20%，允许范围 0.05%–0.50%
 var StopLossPercent = 2.0;           // 默认 2.0%，限制为 1.5%–3.0%
 var MaxHoldHours = 12.0;
 var MakerFeePercent = 0.02;          // 仅内部诊断；FMZ 平台费用由回测 UI 决定
@@ -319,7 +319,7 @@ function orderFillPrice(order, fallback) {
 
 function buildConfig() {
     var maxLeverage = clamp(numberValue(MaxLeverage, 1), 1, 3);
-    var tp = clamp(numberValue(TakeProfitPercent, 0.08) / 100, 0.0005, 0.0008);
+    var tp = clamp(numberValue(TakeProfitPercent, 0.08) / 100, 0.0005, 0.005);
     var stop = clamp(numberValue(StopLossPercent, 2.0) / 100, 0.015, 0.03);
     var maxHoldHours = clamp(numberValue(MaxHoldHours, 12), 0.01, 12);
     var start = parseOptionalTime(InSampleStart, "InSampleStart");
