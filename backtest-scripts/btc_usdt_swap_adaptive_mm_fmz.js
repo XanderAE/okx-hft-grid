@@ -10,36 +10,61 @@ exchanges: [{"eid":"Futures_OKX","currency":"BTC_USDT","balance":10000}]
 // FMZ 的 1 分钟回测每根已完成 K 线只作一次决策，不能复现 Go 进程的 30 秒节奏。
 // 平台成交、手续费和滑点由 FMZ 回测器撮合；脚本内费用与资金费仅用于独立策略诊断。
 
-// ===== FMZ 可调回测参数 =====
-var FastLength = 5;
-var SlowLength = 20;
-var SlopeBars = 1;
-var MinConfidence = 0.0;
-var VolatilityLength = 20;
-var VolatilityPenalty = 20.0;
-var MaxLeverage = 3.0;
-var TickSize = 0.1;
+// ===== 策略核心参数（直接改这里的数字即可生效） =====
+// FMZ 不会对 _cfg 对象做参数面板缓存覆盖。
+var _cfg = {
+    FastLength: 5,
+    SlowLength: 20,
+    SlopeBars: 1,
+    MinConfidence: 0.0,
+    VolatilityLength: 20,
+    VolatilityPenalty: 20.0,
+    MaxLeverage: 3.0,
+    TickSize: 0.1,
+    PaperEquity: 10000.0,
+    RequestedNotionalUSDT: 100.0,
+    MarginAllocationPercent: 10.0,
+    // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
+    TakeProfitPercent: 0.20,         // ★ 改这里！0.15 / 0.20 / 0.30 / 0.50 扫参数
+    StopLossPercent: 2.0,            // 默认 2.0%，限制为 1.5%–3.0%
+    MaxHoldHours: 12.0,
+    MakerFeePercent: 0.02,           // 仅内部诊断
+    TakerFeePercent: 0.05,           // 仅内部诊断
+    ForcedExitSlippagePercent: 0.05,
+    FallbackFundingRate8hPercent: 0.01,
+    InSampleStart: "",
+    OOSStart: "",
+    EndTime: "",
+    TradeInSample: true,
+    TradeOOS: true,
+    PollMilliseconds: 1000
+};
 
-var PaperEquity = 10000.0;
-var RequestedNotionalUSDT = 100.0;
-var MarginAllocationPercent = 10.0;
-// OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
-
-var TakeProfitPercent = 0.20;        // 默认 0.20%，允许范围 0.05%–0.50%
-var StopLossPercent = 2.0;           // 默认 2.0%，限制为 1.5%–3.0%
-var MaxHoldHours = 12.0;
-var MakerFeePercent = 0.02;          // 仅内部诊断；FMZ 平台费用由回测 UI 决定
-var TakerFeePercent = 0.05;          // 仅内部诊断；FMZ 平台费用由回测 UI 决定
-var ForcedExitSlippagePercent = 0.05;
-var FallbackFundingRate8hPercent = 0.01;
-
-// 留空表示 AUTO：使用 FMZ 本次回测实际处理到的首尾 K 线，且所有 K 线都允许交易。
-var InSampleStart = "";
-var OOSStart = "";
-var EndTime = "";
-var TradeInSample = true;
-var TradeOOS = true;
-var PollMilliseconds = 1000;
+// 映射到原有变量名（保持后续代码兼容）
+var FastLength = _cfg.FastLength;
+var SlowLength = _cfg.SlowLength;
+var SlopeBars = _cfg.SlopeBars;
+var MinConfidence = _cfg.MinConfidence;
+var VolatilityLength = _cfg.VolatilityLength;
+var VolatilityPenalty = _cfg.VolatilityPenalty;
+var MaxLeverage = _cfg.MaxLeverage;
+var TickSize = _cfg.TickSize;
+var PaperEquity = _cfg.PaperEquity;
+var RequestedNotionalUSDT = _cfg.RequestedNotionalUSDT;
+var MarginAllocationPercent = _cfg.MarginAllocationPercent;
+var TakeProfitPercent = _cfg.TakeProfitPercent;
+var StopLossPercent = _cfg.StopLossPercent;
+var MaxHoldHours = _cfg.MaxHoldHours;
+var MakerFeePercent = _cfg.MakerFeePercent;
+var TakerFeePercent = _cfg.TakerFeePercent;
+var ForcedExitSlippagePercent = _cfg.ForcedExitSlippagePercent;
+var FallbackFundingRate8hPercent = _cfg.FallbackFundingRate8hPercent;
+var InSampleStart = _cfg.InSampleStart;
+var OOSStart = _cfg.OOSStart;
+var EndTime = _cfg.EndTime;
+var TradeInSample = _cfg.TradeInSample;
+var TradeOOS = _cfg.TradeOOS;
+var PollMilliseconds = _cfg.PollMilliseconds;
 
 var LONG = 1;
 var SHORT = -1;
