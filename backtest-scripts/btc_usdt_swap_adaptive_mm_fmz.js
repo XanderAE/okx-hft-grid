@@ -16,7 +16,7 @@ var _cfg = {
     FastLength: 5,
     SlowLength: 20,
     SlopeBars: 1,
-    MinConfidence: 0.30,
+    MinConfidence: 0.10,
     VolatilityLength: 20,
     VolatilityPenalty: 20.0,
     MaxLeverage: 3.0,
