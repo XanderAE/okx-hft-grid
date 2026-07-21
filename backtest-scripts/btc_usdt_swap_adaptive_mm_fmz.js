@@ -26,8 +26,8 @@ var _cfg = {
     MarginAllocationPercent: 10.0,
     // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
     TakeProfitPercent: 0.10,         // ★ 改这里！0.08 / 0.10 / 0.15 / 0.20 扫参数
-    StopLossPercent: 0.8,            // 收紧止损，限制 0.5%–3.0%
-    MaxHoldHours: 4.0,
+    StopLossPercent: 0.3,            // 收紧止损，快速认错
+    MaxHoldHours: 2.0,
     MakerFeePercent: 0.02,           // 仅内部诊断
     TakerFeePercent: 0.05,           // 仅内部诊断
     ForcedExitSlippagePercent: 0.05,
@@ -345,7 +345,7 @@ function orderFillPrice(order, fallback) {
 function buildConfig() {
     var maxLeverage = clamp(numberValue(MaxLeverage, 1), 1, 3);
     var tp = clamp(numberValue(TakeProfitPercent, 0.08) / 100, 0.0005, 0.005);
-    var stop = clamp(numberValue(StopLossPercent, 2.0) / 100, 0.005, 0.03);
+    var stop = clamp(numberValue(StopLossPercent, 2.0) / 100, 0.002, 0.03);
     var maxHoldHours = clamp(numberValue(MaxHoldHours, 12), 0.01, 24);
     var start = parseOptionalTime(InSampleStart, "InSampleStart");
     var oos = parseOptionalTime(OOSStart, "OOSStart");
@@ -673,10 +673,10 @@ function processPendingEntry(candle) {
     }
     var pending = state.pending;
     var order = nativeGetOrder(pending.id);
-    var elapsedOneBar = candle.Time > pending.submittedAt;
+    var elapsedEnoughBars = candle.Time >= pending.submittedAt + 3 * 60000; // 等待 3 根 K 线
     if (!order) {
-        if (elapsedOneBar && !pending.cancelRequested) {
-            cancelEntryRemainder(pending, "一根已完成 K 线后订单状态不可得，保守撤单");
+        if (elapsedEnoughBars && !pending.cancelRequested) {
+            cancelEntryRemainder(pending, "3 根已完成 K 线后订单状态不可得，保守撤单");
         }
         return false;
     }
@@ -697,8 +697,8 @@ function processPendingEntry(candle) {
         completelyFilled = true;
     }
 
-    if (!completelyFilled && !isOrderCanceled(order) && elapsedOneBar) {
-        if (!pending.cancelRequested && !cancelEntryRemainder(pending, "超过一根已完成有效 K 线仍未成交")) {
+    if (!completelyFilled && !isOrderCanceled(order) && elapsedEnoughBars) {
+        if (!pending.cancelRequested && !cancelEntryRemainder(pending, "超过 3 根已完成有效 K 线仍未成交")) {
             return false;
         }
         var refreshed = nativeGetOrder(pending.id);
@@ -751,9 +751,9 @@ function targetMargin(position, mark, now) {
     } else if (held >= HOUR_MS) {
         margin = cfg.tp * 0.80;
     }
-    margin = Math.max(0.0005, margin);
+    margin = Math.max(0.0008, margin);
     var underwater = position.direction === LONG ? mark < position.entry : mark > position.entry;
-    return underwater ? 0.0005 : margin;
+    return underwater ? 0.0008 : margin;
 }
 
 function submitTakeProfit(mark, now) {
