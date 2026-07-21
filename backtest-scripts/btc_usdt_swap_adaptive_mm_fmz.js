@@ -2,7 +2,7 @@
 start: 2022-01-01 00:00:00
 end: 2025-01-01 00:00:00
 period: 1m
-exchanges: [{"eid":"OKX","currency":"BTC_USDT","balance":10000}]
+exchanges: [{"eid":"Futures_OKCoin","currency":"BTC_USDT","balance":10000}]
 */
 
 // BTC-USDT-SWAP 自适应做市 FMZ 原生期货回测。
