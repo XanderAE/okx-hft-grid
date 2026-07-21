@@ -25,7 +25,7 @@ var _cfg = {
     RequestedNotionalUSDT: 100.0,
     MarginAllocationPercent: 10.0,
     // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
-    TakeProfitPercent: 0.20,         // ★ 改这里！0.15 / 0.20 / 0.30 / 0.50 扫参数
+    TakeProfitPercent: 0.10,         // ★ 改这里！0.15 / 0.20 / 0.30 / 0.50 扫参数
     StopLossPercent: 2.0,            // 默认 2.0%，限制为 1.5%–3.0%
     MaxHoldHours: 12.0,
     MakerFeePercent: 0.02,           // 仅内部诊断
