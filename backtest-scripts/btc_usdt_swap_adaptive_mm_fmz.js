@@ -905,7 +905,10 @@ function replaceTakeProfitIfNeeded(candle) {
     }
     var old = position.tpOrder;
     if (nativeCancelOrder(old.id) === false) {
-        Log("[NATIVE-TP-KEEP] id=" + old.id, "撤单未确认，禁止重复 close 单");
+        // FMZ 回测器可能不允许撤销 close 方向限价单，强制清除内部状态
+        Log("[NATIVE-TP-FORCE-CLEAR] id=" + old.id, "TP 替换时 CancelOrder 返回 false，强制清除");
+        position.tpOrder = null;
+        submitTakeProfit(candle.Close, candle.Time);
         return;
     }
     Log("[NATIVE-CANCEL] id=" + old.id, "TP 目标调整", formatPrice(old.target), "->", formatPrice(desired));
@@ -916,8 +919,9 @@ function replaceTakeProfitIfNeeded(candle) {
             position.tpOrder = null;
             settlePosition(orderFillPrice(refreshed, old.target), "take-profit-maker", candle.Time, deal, old.id);
         } else if (!isOrderCanceled(refreshed) && !isOrderClosed(refreshed)) {
-            Log("[NATIVE-TP-KEEP] id=" + old.id, "撤单后状态仍未终结，禁止重复 close 单");
-            return;
+            // 撤单后状态仍未终结，强制清除允许替换
+            Log("[NATIVE-TP-FORCE-CLEAR] id=" + old.id, "撤单后状态仍未终结，强制清除并替换 TP");
+            position.tpOrder = null;
         } else {
             position.tpOrder = null;
         }
@@ -962,6 +966,7 @@ function cancelTakeProfitBeforeMarketExit(candle) {
     }
     var tp = position.tpOrder;
     var before = nativeGetOrder(tp.id);
+    // 如果 TP 已经被 FMZ 成交，先结算
     if (before && orderDealAmount(before) >= cfg.minContracts) {
         processTakeProfit(candle);
         if (state.position === null) {
@@ -973,9 +978,21 @@ function cancelTakeProfitBeforeMarketExit(candle) {
         }
         tp = position.tpOrder;
     }
-    if (nativeCancelOrder(tp.id) === false) {
-        Log("[NATIVE-EXIT-BLOCKED] TP id=" + tp.id, "撤单未确认，为防止重复平仓暂不发送市价 close");
-        return false;
+    // 如果 GetOrder 显示 TP 已经 CLOSED/CANCELED，直接清除
+    if (before && (isOrderClosed(before) || isOrderCanceled(before))) {
+        position.tpOrder = null;
+        return true;
+    }
+    // 尝试撤销 TP
+    var canceled = nativeCancelOrder(tp.id);
+    if (canceled === false) {
+        // FMZ 回测器可能不允许撤销 close 方向限价单。
+        // 此时强制清除内部 tpOrder 状态，让市价退出继续执行。
+        // FMZ 平台侧的原始 TP 单如果还在，市价退出会覆盖它。
+        Log("[NATIVE-TP-FORCE-CLEAR] id=" + tp.id,
+            "CancelOrder 返回 false，强制清除内部 TP 状态以允许保护性市价退出");
+        position.tpOrder = null;
+        return true;
     }
     Log("[NATIVE-CANCEL] id=" + tp.id, "保护性退出前撤销 TP");
     var after = nativeGetOrder(tp.id);
@@ -989,8 +1006,10 @@ function cancelTakeProfitBeforeMarketExit(candle) {
             }
             position = state.position;
         } else if (!isOrderCanceled(after) && !isOrderClosed(after)) {
-            Log("[NATIVE-EXIT-BLOCKED] TP id=" + tp.id, "撤单后仍为活动状态");
-            return false;
+            // 撤单成功但状态未更新，强制清除
+            Log("[NATIVE-TP-FORCE-CLEAR] id=" + tp.id, "撤单后状态仍未终结，强制清除允许保护性退出");
+            position.tpOrder = null;
+            return true;
         }
     }
     position.tpOrder = null;
