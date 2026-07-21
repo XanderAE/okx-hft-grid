@@ -16,18 +16,18 @@ var _cfg = {
     FastLength: 5,
     SlowLength: 20,
     SlopeBars: 1,
-    MinConfidence: 0.10,
+    MinConfidence: 0,
     VolatilityLength: 20,
-    VolatilityPenalty: 20.0,
+    VolatilityPenalty: 5.0,
     MaxLeverage: 3.0,
     TickSize: 0.1,
     PaperEquity: 10000.0,
     RequestedNotionalUSDT: 100.0,
     MarginAllocationPercent: 10.0,
     // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
-    TakeProfitPercent: 0.30,         // ★ 改这里！0.15 / 0.20 / 0.30 / 0.50 扫参数
-    StopLossPercent: 2.0,            // 默认 2.0%，限制为 1.5%–3.0%
-    MaxHoldHours: 12.0,
+    TakeProfitPercent: 0.10,         // ★ 改这里！0.08 / 0.10 / 0.15 / 0.20 扫参数
+    StopLossPercent: 0.8,            // 收紧止损，限制 0.5%–3.0%
+    MaxHoldHours: 4.0,
     MakerFeePercent: 0.02,           // 仅内部诊断
     TakerFeePercent: 0.05,           // 仅内部诊断
     ForcedExitSlippagePercent: 0.05,
@@ -345,8 +345,8 @@ function orderFillPrice(order, fallback) {
 function buildConfig() {
     var maxLeverage = clamp(numberValue(MaxLeverage, 1), 1, 3);
     var tp = clamp(numberValue(TakeProfitPercent, 0.08) / 100, 0.0005, 0.005);
-    var stop = clamp(numberValue(StopLossPercent, 2.0) / 100, 0.015, 0.03);
-    var maxHoldHours = clamp(numberValue(MaxHoldHours, 12), 0.01, 12);
+    var stop = clamp(numberValue(StopLossPercent, 2.0) / 100, 0.005, 0.03);
+    var maxHoldHours = clamp(numberValue(MaxHoldHours, 12), 0.01, 24);
     var start = parseOptionalTime(InSampleStart, "InSampleStart");
     var oos = parseOptionalTime(OOSStart, "OOSStart");
     var end = parseOptionalTime(EndTime, "EndTime");
