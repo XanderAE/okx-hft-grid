@@ -398,7 +398,8 @@ function newState(initialEquity) {
         oosTrades: 0,
         inSamplePnL: 0,
         oosPnL: 0,
-        lastClose: 0
+        lastClose: 0,
+        staleWarningTime: 0
     };
 }
 
@@ -827,6 +828,16 @@ function processTakeProfit(candle) {
     var tp = position.tpOrder;
     var order = nativeGetOrder(tp.id);
     if (!order) {
+        // 订单查不到：FMZ 某些适配器对已完成的限价 close 单不再返回。
+        // 如果 K 线价格已经穿越 TP 目标，保守认定已成交。
+        var tpReached = (position.direction === LONG && candle.High >= tp.target) ||
+                        (position.direction === SHORT && candle.Low <= tp.target);
+        if (tpReached) {
+            Log("[NATIVE-TP-INFERRED] id=" + tp.id, "GetOrder 返回 null 但价格已触及 TP target",
+                formatPrice(tp.target), "High", formatPrice(candle.High), "Low", formatPrice(candle.Low));
+            position.tpOrder = null;
+            settlePosition(tp.target, "take-profit-maker", candle.Time, tp.contracts, tp.id);
+        }
         return;
     }
     var deal = Math.min(position.contracts, orderDealAmount(order));
@@ -846,9 +857,36 @@ function processTakeProfit(candle) {
         settlePosition(orderFillPrice(order, tp.target), "take-profit-maker", candle.Time, deal, tp.id);
         return;
     }
-    if (isOrderCanceled(order) || isOrderClosed(order)) {
+    // 订单存在但 DealAmount 为 0：检查是否 FMZ 已经成交但字段未正确填充
+    if (isOrderClosed(order)) {
+        // CLOSED 但 DealAmount=0：FMZ 已撮合但适配器未返回成交量，回退为 Amount
+        var inferredDeal = Math.min(position.contracts, orderAmount(order));
+        if (inferredDeal >= cfg.minContracts) {
+            Log("[NATIVE-TP-CLOSED-NO-DEAL] id=" + tp.id, "Status=CLOSED but DealAmount=0, using Amount",
+                formatContracts(inferredDeal));
+            position.tpOrder = null;
+            settlePosition(orderFillPrice(order, tp.target), "take-profit-maker", candle.Time, inferredDeal, tp.id);
+            return;
+        }
         position.tpOrder = null;
         Log("[NATIVE-TP-END] id=" + tp.id, "status", statusText(order), "无可管理成交量");
+        return;
+    }
+    if (isOrderCanceled(order)) {
+        position.tpOrder = null;
+        Log("[NATIVE-TP-END] id=" + tp.id, "status", statusText(order), "无可管理成交量");
+        return;
+    }
+    // 订单仍 PENDING 但价格已穿越：FMZ 回测器可能延迟更新状态
+    var priceReached = (position.direction === LONG && candle.High >= tp.target) ||
+                       (position.direction === SHORT && candle.Low <= tp.target);
+    if (priceReached) {
+        // 等一根 K 线让 FMZ 回测器有时间撮合
+        if (candle.Time > tp.submittedAt) {
+            Log("[NATIVE-TP-PRICE-REACHED] id=" + tp.id, "价格已穿越 TP target 但订单仍 PENDING",
+                "target", formatPrice(tp.target), "High", formatPrice(candle.High), "Low", formatPrice(candle.Low),
+                "status", statusText(order));
+        }
     }
 }
 
@@ -1026,6 +1064,18 @@ function processCandle(candle) {
             } else {
                 replaceTakeProfitIfNeeded(candle);
             }
+        }
+    }
+    // 卡仓诊断：如果持仓超过 maxHoldMs 且仍未退出，记录一次警告（每 60 分钟最多一次）
+    if (state.position !== null && candle.Time - state.position.openedAt >= cfg.maxHoldMs) {
+        if (!state.staleWarningTime || candle.Time - state.staleWarningTime >= HOUR_MS) {
+            state.staleWarningTime = candle.Time;
+            Log("[STALE-POSITION] 持仓已超过 maxHold 但未退出！",
+                "openedAt", formatTime(state.position.openedAt), "now", formatTime(candle.Time),
+                "held_hours", ((candle.Time - state.position.openedAt) / HOUR_MS).toFixed(1),
+                "direction", directionName(state.position.direction),
+                "entry", formatPrice(state.position.entry),
+                "tpOrder", state.position.tpOrder ? ("id=" + state.position.tpOrder.id + " target=" + formatPrice(state.position.tpOrder.target)) : "null");
         }
     }
 
