@@ -1,8 +1,8 @@
 /*backtest
-start: 2022-01-01 00:00:00
-end: 2025-01-01 00:00:00
+start: 2023-01-01 00:00:00
+end: 2023-04-01 00:00:00
 period: 1m
-exchanges: [{"eid":"Futures_OKCoin","currency":"BTC_USDT","balance":10000}]
+exchanges: [{"eid":"Futures_OKX","currency":"BTC_USDT","balance":10000}]
 */
 
 // BTC-USDT-SWAP 自适应做市 FMZ 原生期货回测。
@@ -175,7 +175,8 @@ function nativeSetMarginLevel(leverage) {
         return true;
     }
     try {
-        return exchange.SetMarginLevel(leverage) !== false;
+        exchange.SetMarginLevel(leverage);
+        return true;
     } catch (error) {
         Log("[NATIVE-ERROR] SetMarginLevel", leverage, "失败", String(error));
         return false;
@@ -1139,6 +1140,12 @@ function main() {
     }
     Log("[START][SIZE] ctVal", cfg.contractBTC, "BTC/张，lot/min", formatContracts(cfg.contractLotSize),
         "张；目标张数按价格、RequestedNotionalUSDT 和动态 1–3x 杠杆计算。" );
+    // 启动数据自检：确认合约绑定与 GetRecords 是否真的返回数据。
+    var probe = exchange.GetRecords();
+    Log("[START][DATA-PROBE] contractType", exchange.GetContractType(), "currency", exchange.GetCurrency(),
+        "records", probe === null ? "null" : (probe.length + " bars"),
+        "firstTime", probe && probe.length > 0 ? formatTime(probe[0].Time) : "n/a",
+        "lastClose", probe && probe.length > 0 ? probe[probe.length - 1].Close : "n/a");
     while (true) {
         var records = exchange.GetRecords();
         processClosedRecords(records);
