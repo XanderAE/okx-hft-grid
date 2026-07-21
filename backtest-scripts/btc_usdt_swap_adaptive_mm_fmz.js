@@ -399,7 +399,9 @@ function newState(initialEquity) {
         inSamplePnL: 0,
         oosPnL: 0,
         lastClose: 0,
-        staleWarningTime: 0
+        staleWarningTime: 0,
+        lastNoSignalLog: 0,
+        lastBlockedLog: 0
     };
 }
 
@@ -1113,6 +1115,14 @@ function processCandle(candle) {
     }
     if (state.position !== null || state.pending !== null ||
         (cfg.endTime > 0 && candle.Time >= cfg.endTime) || !phaseEnabled(candle.Time)) {
+        // 每 4 小时记录一次"被阻塞"诊断
+        if (!state.lastBlockedLog || candle.Time - state.lastBlockedLog >= 4 * HOUR_MS) {
+            state.lastBlockedLog = candle.Time;
+            var reason = state.position !== null ? "position=" + directionName(state.position.direction) + " entry=" + formatPrice(state.position.entry) + " tpOrder=" + (state.position.tpOrder ? "id=" + state.position.tpOrder.id : "null") :
+                         state.pending !== null ? "pending=id=" + state.pending.id : "phase/time";
+            Log("[BLOCKED-DIAG] time", formatTime(candle.Time), "reason", reason,
+                "trades", state.trades, "rawSignals", state.rawSignals);
+        }
         return;
     }
     var signal = signalForCloseHistory();
@@ -1120,6 +1130,20 @@ function processCandle(candle) {
         state.rawSignals++;
     }
     if (signal.direction === FLAT || signal.confidence < cfg.minConfidence) {
+        // 每小时最多记录一次"无信号"诊断
+        if (!state.lastNoSignalLog || candle.Time - state.lastNoSignalLog >= 4 * HOUR_MS) {
+            state.lastNoSignalLog = candle.Time;
+            var fastSeries = emaSeries(state.closes, cfg.fastLength);
+            var slowSeries = emaSeries(state.closes, cfg.slowLength);
+            var last = state.closes.length - 1;
+            Log("[SIGNAL-DIAG] time", formatTime(candle.Time), "direction", directionName(signal.direction),
+                "conf", signal.confidence.toFixed(4),
+                "fast", signal.fast.toFixed(1), "slow", signal.slow.toFixed(1),
+                "gap%", ((signal.fast - signal.slow) / signal.slow * 100).toFixed(4),
+                "rawSignals", state.rawSignals, "qualified", state.qualifiedSignals,
+                "closes", state.closes.length, "position", state.position === null ? "null" : "OPEN",
+                "pending", state.pending === null ? "null" : "ACTIVE");
+        }
         return;
     }
     state.qualifiedSignals++;
