@@ -16,7 +16,7 @@ var _cfg = {
     FastLength: 5,
     SlowLength: 20,
     SlopeBars: 1,
-    MinConfidence: 0,
+    MinConfidence: 0.05,
     VolatilityLength: 20,
     VolatilityPenalty: 5.0,
     MaxLeverage: 3.0,
@@ -26,7 +26,7 @@ var _cfg = {
     MarginAllocationPercent: 10.0,
     // OKX BTC-USDT-SWAP：ctVal=0.01 BTC/张，lotSz=0.01 张，minSz=0.01 张，tickSz=0.1。
     TakeProfitPercent: 0.10,         // ★ 改这里！0.08 / 0.10 / 0.15 / 0.20 扫参数
-    StopLossPercent: 0.3,            // 收紧止损，快速认错
+    StopLossPercent: 0.5,            // 折中止损，不被噪声打出也不单笔太亏
     MaxHoldHours: 2.0,
     MakerFeePercent: 0.02,           // 仅内部诊断
     TakerFeePercent: 0.05,           // 仅内部诊断
@@ -1169,6 +1169,11 @@ function processCandle(candle) {
                 "closes", state.closes.length, "position", state.position === null ? "null" : "OPEN",
                 "pending", state.pending === null ? "null" : "ACTIVE");
         }
+        return;
+    }
+    // 波动率门槛：高波动时不入场（容易被止损打出）
+    var currentVol = realizedVolatility(state.closes, cfg.volatilityLength);
+    if (currentVol > 0.003) {
         return;
     }
     state.qualifiedSignals++;
